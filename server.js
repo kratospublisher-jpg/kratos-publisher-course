@@ -11,16 +11,7 @@ const PORT = process.env.PORT || 3000;
 app.use(compression());
 app.use(cors());
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "https://ywpdiapocrjzabnqixoq.supabase.co"],
-    }
-  }
+  contentSecurityPolicy: false
 }));
 
 // Static files
