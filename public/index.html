@@ -783,8 +783,8 @@ body {
       <span class="logo-text"><span>Kratos</span> Publisher</span>
     </a>
     <ul class="nav-links">
-      <li class="hide-mobile"><a onclick="showWelcome()">Home</a></li>
-      <li class="hide-mobile"><a onclick="startCourse()">Curriculum</a></li>
+      <li class="hide-mobile"><a href="#" onclick="showWelcome(); return false;">Home</a></li>
+      <li class="hide-mobile"><a href="#" onclick="startCourse(); return false;">Curriculum</a></li>
       <li class="nav-progress hide-mobile">Progress: <strong id="progressPct">0%</strong></li>
       <li id="authContainer"></li>
     </ul>
@@ -834,11 +834,11 @@ body {
         <div class="hero-stat"><div class="hero-stat-num">∞</div><div class="hero-stat-label">Impact</div></div>
       </div>
       <div class="hero-cta-group">
-        <a class="btn-cta btn-cta-primary" onclick="startCourse()">
+        <a class="btn-cta btn-cta-primary" href="#" onclick="startCourse(); return false;">
           Begin Your Journey
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
-        <a class="btn-cta btn-cta-secondary" onclick="openAuth()">
+        <a class="btn-cta btn-cta-secondary" href="#" onclick="openAuth(); return false;">
           Sign In to Save Progress
         </a>
       </div>
@@ -897,7 +897,7 @@ body {
     <div class="module-preview-grid" id="modulePreviewGrid"></div>
 
     <div style="text-align:center; padding: 2rem 0;">
-      <a class="btn-cta btn-cta-primary" onclick="startCourse()" style="opacity:1;animation:none;">
+      <a class="btn-cta btn-cta-primary" href="#" onclick="startCourse(); return false;" style="opacity:1;animation:none;">
         Start Learning →
       </a>
     </div>

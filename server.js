@@ -20,7 +20,12 @@ app.use(express.static(path.join(__dirname, 'public'), {
   etag: true
 }));
 
-// SPA fallback
+// Admin dashboard route
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// SPA fallback (only for non-file routes)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
