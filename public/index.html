@@ -753,6 +753,45 @@ body {
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
   .course-layout { grid-template-columns: 260px 1fr; gap: 1.5rem; }
+/* ===== LESSON VIDEO ===== */
+.lesson-video { width:100%; border-radius:12px; margin-bottom:1rem; background:var(--bg-primary); }
+.lesson-video video { width:100%; border-radius:12px; display:block; }
+
+/* ===== LESSON NOTES FROM ADMIN ===== */
+.admin-notes { background:rgba(0,212,255,0.04); border:1px solid rgba(0,212,255,0.1); border-radius:10px; padding:1.25rem; margin:1rem 0; font-size:0.88rem; color:var(--text-secondary); line-height:1.7; }
+.admin-notes h4 { color:var(--text-primary); font-size:0.82rem; margin-bottom:0.5rem; }
+
+/* ===== QUIZ ===== */
+.quiz-container { background:var(--bg-card); border:1px solid rgba(255,140,0,0.2); border-radius:12px; padding:1.5rem; margin:1rem 0; }
+.quiz-container h4 { font-family:'DM Serif Display',serif; font-size:1.05rem; margin-bottom:1rem; color:var(--k-orange); display:flex; align-items:center; gap:0.5rem; }
+.quiz-q { margin-bottom:1.25rem; padding-bottom:1.25rem; border-bottom:1px solid var(--border-subtle); }
+.quiz-q:last-of-type { border-bottom:none; margin-bottom:0.75rem; }
+.quiz-q-text { font-size:0.9rem; font-weight:600; margin-bottom:0.6rem; color:var(--text-primary); }
+.quiz-q-num { color:var(--k-orange); font-size:0.78rem; margin-bottom:0.25rem; }
+.quiz-opt { display:flex; align-items:center; gap:0.6rem; padding:0.55rem 0.85rem; margin:0.3rem 0; border-radius:8px; cursor:pointer; font-size:0.85rem; color:var(--text-secondary); transition:all 0.2s; border:1px solid transparent; }
+.quiz-opt:hover { background:rgba(255,255,255,0.03); }
+.quiz-opt.selected { background:rgba(0,212,255,0.08); border-color:rgba(0,212,255,0.2); color:var(--text-primary); }
+.quiz-opt.correct { background:rgba(74,222,128,0.1); border-color:rgba(74,222,128,0.3); color:#4ade80; }
+.quiz-opt.wrong { background:rgba(255,23,68,0.08); border-color:rgba(255,23,68,0.2); color:var(--k-red); }
+.quiz-radio { width:16px; height:16px; border-radius:50%; border:2px solid var(--border-medium); flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+.quiz-opt.selected .quiz-radio { border-color:var(--k-cyan); background:var(--k-cyan); }
+.quiz-opt.selected .quiz-radio::after { content:''; width:6px; height:6px; border-radius:50%; background:white; }
+.quiz-opt.correct .quiz-radio { border-color:#4ade80; background:#4ade80; }
+.quiz-opt.wrong .quiz-radio { border-color:var(--k-red); background:var(--k-red); }
+.quiz-btn { margin-top:0.75rem; }
+.quiz-result { padding:1rem; border-radius:10px; margin-top:0.75rem; font-size:0.88rem; font-weight:600; text-align:center; }
+.quiz-result.pass { background:rgba(74,222,128,0.1); color:#4ade80; border:1px solid rgba(74,222,128,0.2); }
+.quiz-result.fail { background:rgba(255,23,68,0.08); color:var(--k-red); border:1px solid rgba(255,23,68,0.15); }
+.quiz-locked { display:flex; align-items:center; gap:0.5rem; padding:0.75rem 1rem; background:rgba(255,140,0,0.06); border:1px solid rgba(255,140,0,0.15); border-radius:10px; margin-top:1rem; font-size:0.82rem; color:var(--k-orange); }
+
+/* ===== NOTE EDITOR MODAL ===== */
+.note-modal { position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; }
+.note-modal.visible { display:flex; }
+.note-modal-box { background:var(--bg-card); border:1px solid var(--border-medium); border-radius:18px; padding:2rem; width:100%; max-width:560px; }
+.note-modal-box h3 { font-family:'DM Serif Display',serif; margin-bottom:1rem; }
+.note-modal-box textarea { width:100%; min-height:200px; padding:1rem; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:10px; color:var(--text-primary); font-family:'Sora',sans-serif; font-size:0.88rem; outline:none; resize:vertical; }
+.note-modal-box textarea:focus { border-color:var(--k-cyan); }
+
 }
 @media (max-width: 768px) {
   .course-layout { grid-template-columns: 1fr; }
@@ -1413,17 +1452,30 @@ function renderMainContent() {
         </div>
         <div class="lesson-content">
           <div class="lesson-body">
+            <!-- Video player area -->
+            <div class="lesson-video-area" id="video-area-${lesson.num}"></div>
+
             <ul class="lesson-topics">
               ${lesson.topics.map(t => `<li>${t}</li>`).join('')}
             </ul>
-            <label class="completion-check" onclick="event.stopPropagation()">
-              <input type="checkbox" ${isDone ? 'checked' : ''} onchange="toggleComplete(${lesson.num}, this.checked)">
-              <span class="check-box"></span>
-              <span>Mark as completed</span>
-            </label>
-            <div class="lesson-actions">
-              <button class="btn-lesson btn-primary">Start Lesson</button>
-              <button class="btn-lesson btn-secondary">Download Notes</button>
+
+            <!-- Notes from admin -->
+            <div class="lesson-notes-area" id="notes-area-${lesson.num}"></div>
+
+            <!-- Quiz area (must pass to complete) -->
+            <div class="lesson-quiz-area" id="quiz-area-${lesson.num}"></div>
+
+            <!-- Completion (hidden until quiz passed or no quiz) -->
+            <div class="lesson-completion" id="completion-${lesson.num}" style="${isDone ? '' : 'display:none;'}">
+              <div style="display:flex;align-items:center;gap:0.5rem;padding:0.75rem 1rem;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:10px;margin-top:1rem;">
+                <span style="color:#4ade80;font-size:1.1rem;">✓</span>
+                <span style="color:#4ade80;font-size:0.85rem;font-weight:600;">Lesson Complete!</span>
+              </div>
+            </div>
+
+            <div class="lesson-actions" style="margin-top:1rem;">
+              <button class="btn-lesson btn-primary" onclick="loadLessonContent(${lesson.num})">Start Lesson</button>
+              <button class="btn-lesson btn-secondary" onclick="openNoteEditor(${lesson.num})">📝 Take Notes</button>
             </div>
           </div>
         </div>
@@ -1508,6 +1560,242 @@ window.addEventListener('scroll', () => {
 document.getElementById('authOverlay').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeAuth();
 });
+
+// ========== LESSON CONTENT (Video + Quiz + Notes) ==========
+let lessonContentCache = {};
+let quizAnswers = {};
+let quizPassed = new Set();
+
+// Load saved quiz passes
+try {
+  const savedQuiz = localStorage.getItem('kratos_quiz_passed');
+  if (savedQuiz) quizPassed = new Set(JSON.parse(savedQuiz));
+} catch(e) {}
+
+async function loadLessonContent(lessonNum) {
+  // Fetch from Supabase if not cached
+  if (!lessonContentCache[lessonNum] && sb) {
+    try {
+      const { data } = await sb.from('lesson_content')
+        .select('*')
+        .eq('lesson_num', lessonNum)
+        .single();
+      if (data) lessonContentCache[lessonNum] = data;
+    } catch(e) {}
+  }
+
+  const content = lessonContentCache[lessonNum];
+  const videoArea = document.getElementById('video-area-' + lessonNum);
+  const notesArea = document.getElementById('notes-area-' + lessonNum);
+  const quizArea = document.getElementById('quiz-area-' + lessonNum);
+  const completionArea = document.getElementById('completion-' + lessonNum);
+
+  // Render video
+  if (content?.video_url) {
+    videoArea.innerHTML = `
+      <div class="lesson-video">
+        <video controls preload="metadata">
+          <source src="${content.video_url}" type="video/mp4">
+          Your browser does not support video playback.
+        </video>
+      </div>`;
+  }
+
+  // Render admin notes
+  if (content?.generated_notes) {
+    notesArea.innerHTML = `
+      <div class="admin-notes">
+        <h4>📖 Lesson Notes</h4>
+        ${content.generated_notes.split('\n').map(line => {
+          if (line.startsWith('# ')) return `<h3 style="font-size:1rem;margin:0.75rem 0 0.25rem;color:var(--text-primary)">${line.slice(2)}</h3>`;
+          if (line.startsWith('## ')) return `<h4 style="font-size:0.9rem;margin:0.6rem 0 0.2rem;color:var(--text-primary)">${line.slice(3)}</h4>`;
+          if (line.startsWith('- ')) return `<div style="padding-left:1rem;position:relative"><span style="position:absolute;left:0;color:var(--k-cyan)">•</span>${line.slice(2)}</div>`;
+          if (line.trim()) return `<p style="margin:0.3rem 0">${line}</p>`;
+          return '';
+        }).join('')}
+      </div>`;
+  }
+
+  // Render quiz
+  const isDone = completedLessons.has(lessonNum);
+  const isPassed = quizPassed.has(lessonNum) || isDone;
+
+  if (content?.generated_quiz && Array.isArray(content.generated_quiz) && content.generated_quiz.length > 0) {
+    if (isPassed) {
+      quizArea.innerHTML = `
+        <div class="quiz-result pass" style="margin-top:1rem;">
+          ✅ Quiz passed! Lesson complete.
+        </div>`;
+      completionArea.style.display = 'block';
+    } else {
+      quizAnswers[lessonNum] = {};
+      let qHtml = `<div class="quiz-container"><h4>📝 Lesson Quiz</h4><p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;">Answer all questions correctly to complete this lesson.</p>`;
+
+      content.generated_quiz.forEach((q, qi) => {
+        qHtml += `<div class="quiz-q" id="quiz-${lessonNum}-q${qi}">
+          <div class="quiz-q-num">Question ${qi + 1}</div>
+          <div class="quiz-q-text">${q.question}</div>`;
+        q.options.forEach((opt, oi) => {
+          qHtml += `<div class="quiz-opt" id="quiz-${lessonNum}-q${qi}-o${oi}" onclick="selectQuizAnswer(${lessonNum}, ${qi}, ${oi})">
+            <div class="quiz-radio"></div>
+            <span>${opt}</span>
+          </div>`;
+        });
+        qHtml += `</div>`;
+      });
+
+      qHtml += `<button class="btn-lesson btn-primary quiz-btn" onclick="submitQuiz(${lessonNum})">Submit Answers</button>`;
+      qHtml += `<div id="quiz-result-${lessonNum}"></div></div>`;
+      quizArea.innerHTML = qHtml;
+      completionArea.style.display = 'none';
+    }
+  } else {
+    // No quiz — show completion checkbox
+    if (!isDone) {
+      quizArea.innerHTML = `
+        <label class="completion-check" onclick="event.stopPropagation()" style="margin-top:1rem;">
+          <input type="checkbox" onchange="toggleComplete(${lessonNum}, this.checked)">
+          <span class="check-box"></span>
+          <span>Mark as completed</span>
+        </label>`;
+    }
+    if (isDone) completionArea.style.display = 'block';
+  }
+}
+
+function selectQuizAnswer(lessonNum, qIdx, optIdx) {
+  // Clear previous selection for this question
+  const quiz = lessonContentCache[lessonNum]?.generated_quiz;
+  if (!quiz) return;
+
+  quiz[qIdx].options.forEach((_, oi) => {
+    const el = document.getElementById(`quiz-${lessonNum}-q${qIdx}-o${oi}`);
+    if (el) el.classList.remove('selected', 'correct', 'wrong');
+  });
+
+  // Select new
+  const selected = document.getElementById(`quiz-${lessonNum}-q${qIdx}-o${optIdx}`);
+  if (selected) selected.classList.add('selected');
+
+  if (!quizAnswers[lessonNum]) quizAnswers[lessonNum] = {};
+  quizAnswers[lessonNum][qIdx] = optIdx;
+}
+
+function submitQuiz(lessonNum) {
+  const quiz = lessonContentCache[lessonNum]?.generated_quiz;
+  if (!quiz) return;
+
+  const answers = quizAnswers[lessonNum] || {};
+  let correct = 0;
+  let total = quiz.length;
+
+  // Check if all questions answered
+  if (Object.keys(answers).length < total) {
+    document.getElementById(`quiz-result-${lessonNum}`).innerHTML = `
+      <div class="quiz-result fail">Please answer all questions before submitting.</div>`;
+    return;
+  }
+
+  // Grade
+  quiz.forEach((q, qi) => {
+    const userAnswer = answers[qi];
+    const correctAnswer = q.answer;
+    const isCorrect = userAnswer === correctAnswer;
+
+    if (isCorrect) correct++;
+
+    // Show correct/wrong
+    q.options.forEach((_, oi) => {
+      const el = document.getElementById(`quiz-${lessonNum}-q${qi}-o${oi}`);
+      if (!el) return;
+      el.classList.remove('selected');
+      if (oi === correctAnswer) el.classList.add('correct');
+      else if (oi === userAnswer && !isCorrect) el.classList.add('wrong');
+    });
+  });
+
+  const passed = correct === total;
+  const resultEl = document.getElementById(`quiz-result-${lessonNum}`);
+
+  if (passed) {
+    quizPassed.add(lessonNum);
+    try { localStorage.setItem('kratos_quiz_passed', JSON.stringify([...quizPassed])); } catch(e) {}
+
+    resultEl.innerHTML = `
+      <div class="quiz-result pass">
+        🎉 ${correct}/${total} correct — Quiz Passed! Lesson marked as complete.
+      </div>`;
+
+    // Auto-complete the lesson
+    toggleComplete(lessonNum, true);
+    document.getElementById('completion-' + lessonNum).style.display = 'block';
+  } else {
+    resultEl.innerHTML = `
+      <div class="quiz-result fail">
+        ${correct}/${total} correct — You need a perfect score to pass. 
+        <button class="btn-lesson btn-secondary" style="margin-top:0.5rem;display:block;margin-left:auto;margin-right:auto;" onclick="retryQuiz(${lessonNum})">Try Again</button>
+      </div>`;
+  }
+}
+
+function retryQuiz(lessonNum) {
+  quizAnswers[lessonNum] = {};
+  loadLessonContent(lessonNum);
+}
+
+// ========== NOTE EDITOR ==========
+function openNoteEditor(lessonNum) {
+  // Create modal if not exists
+  let modal = document.getElementById('noteModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'noteModal';
+    modal.className = 'note-modal';
+    document.body.appendChild(modal);
+  }
+
+  const lessonTitle = courseData.flatMap(m => m.lessons).find(l => l.num === lessonNum)?.title || 'Lesson ' + lessonNum;
+
+  // Load existing note
+  let existingNote = '';
+  if (sb && currentUser) {
+    sb.from('user_notes').select('content').eq('user_id', currentUser.id).eq('lesson_num', lessonNum).single()
+      .then(({ data }) => {
+        if (data?.content) {
+          document.getElementById('noteTextarea').value = data.content;
+        }
+      });
+  }
+
+  modal.innerHTML = `
+    <div class="note-modal-box">
+      <h3>📝 Notes: ${lessonTitle}</h3>
+      <textarea id="noteTextarea" placeholder="Write your notes here...">${existingNote}</textarea>
+      <div style="display:flex;gap:0.5rem;margin-top:1rem;">
+        <button class="btn-lesson btn-primary" onclick="saveNoteFromModal(${lessonNum})">Save Notes</button>
+        <button class="btn-lesson btn-secondary" onclick="closeNoteModal()">Cancel</button>
+      </div>
+    </div>`;
+  modal.classList.add('visible');
+}
+
+async function saveNoteFromModal(lessonNum) {
+  const content = document.getElementById('noteTextarea').value;
+  if (sb && currentUser) {
+    await sb.from('user_notes').upsert({
+      user_id: currentUser.id,
+      lesson_num: lessonNum,
+      content: content,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,lesson_num' });
+  }
+  closeNoteModal();
+}
+
+function closeNoteModal() {
+  const modal = document.getElementById('noteModal');
+  if (modal) modal.classList.remove('visible');
+}
 
 // ========== INIT ==========
 renderModulePreviews();

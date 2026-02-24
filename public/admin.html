@@ -944,46 +944,74 @@ async function generateContent() {
   const lessonNum = document.getElementById('videoLessonSelect').value;
   if (!lessonNum) return;
 
-  const lesson = allLessons?.find(l => l.lesson_num === parseInt(lessonNum));
   const btn = event.currentTarget;
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Generating content...';
-
-  // Since we can't process video directly, we generate smart content from lesson metadata
-  // In production, you'd send the video to a transcription API (Whisper, AssemblyAI, etc.)
-  // then feed the transcript to an AI to generate content
 
   try {
     const { data: lessonData } = await sb.from('lesson_content')
       .select('*').eq('lesson_num', parseInt(lessonNum)).single();
 
-    // Generate content based on lesson title and description
     const title = lessonData.title;
-    const desc = lessonData.description;
+    const desc = lessonData.description || '';
+    const num = parseInt(lessonNum);
 
-    const summary = `This lesson covers: ${desc}\n\nStudents will learn the key principles and practical steps needed to apply these concepts to their Christian book publishing journey.`;
+    // ===== LESSON-SPECIFIC QUIZ BANK =====
+    const quizBank = {
+      1: [ // Is God Calling You to Write This Book?
+        { question: "What is the primary foundation for writing a Christian book?", options: ["A) A strong marketing plan", "B) A sense of God's calling and stewardship", "C) Having a large social media following", "D) A publishing contract"], answer: 1 },
+        { question: "How should a Christian author distinguish between God's timing and personal ambition?", options: ["A) By checking book sales trends", "B) Through prayer, discernment, and seeking confirmation", "C) By comparing themselves to other authors", "D) By rushing to publish as fast as possible"], answer: 1 },
+        { question: "Writing a Christian book should be viewed as:", options: ["A) Primarily a business opportunity", "B) A way to become famous", "C) An act of stewardship and obedience", "D) Something only pastors should do"], answer: 2 },
+        { question: "What role does prayer play in the decision to write?", options: ["A) It's optional", "B) It's central to discerning God's will for your book", "C) It should only happen after you finish writing", "D) It's only for the launch phase"], answer: 1 },
+        { question: "Which of the following best describes 'confirmation' in the context of writing?", options: ["A) Getting a book deal", "B) Receiving alignment from trusted advisors, Scripture, and the Holy Spirit", "C) Having thousands of followers", "D) Feeling excited about your idea"], answer: 1 }
+      ],
+      2: [ // Defining Your Message & Audience
+        { question: "Why is it important to define your target audience?", options: ["A) To write a book that speaks to everyone", "B) To ensure your message reaches and impacts the right readers", "C) To make the book more expensive", "D) It's not important"], answer: 1 },
+        { question: "What should a Christian author consider when defining their message?", options: ["A) What's trending on social media", "B) What spiritual problem the book solves for readers", "C) How to make the most money", "D) What other authors are writing about"], answer: 1 },
+        { question: "Narrowing your Christian niche means:", options: ["A) Writing about everything possible", "B) Focusing on a specific area like devotional, memoir, or theology", "C) Limiting your potential readers", "D) Copying another author's style"], answer: 1 },
+        { question: "Who should your Christian book primarily serve?", options: ["A) Publishers and agents", "B) The specific reader God has placed on your heart", "C) Only your church members", "D) Book reviewers"], answer: 1 },
+        { question: "A well-defined message should:", options: ["A) Be vague to appeal to everyone", "B) Clearly articulate the transformation the reader will experience", "C) Focus only on doctrine", "D) Avoid personal stories"], answer: 1 }
+      ],
+      3: [ // Choosing the Right Type of Christian Book
+        { question: "Which of these is NOT a common type of Christian book?", options: ["A) Devotional", "B) Bible study", "C) Algorithm guide", "D) Christian fiction"], answer: 2 },
+        { question: "How does the format of your book affect publishing options?", options: ["A) It doesn't matter", "B) Different formats have different publishing requirements and audiences", "C) All formats are published the same way", "D) Only fiction gets published"], answer: 1 },
+        { question: "A Christian living book typically focuses on:", options: ["A) Fictional stories", "B) Practical faith application for everyday life", "C) Academic theology only", "D) Children's stories"], answer: 1 },
+        { question: "When choosing your book type, you should consider:", options: ["A) Only what sells best", "B) Your message, audience, and how God is leading you", "C) What's easiest to write", "D) What requires the fewest pages"], answer: 1 },
+        { question: "A memoir or testimony book is best for authors who:", options: ["A) Want to write fiction", "B) Have a personal story of God's work that can encourage others", "C) Only want to teach doctrine", "D) Don't have writing experience"], answer: 1 }
+      ]
+    };
 
-    const notes = `# ${title}\n\n## Key Takeaways\n${desc.split('.').filter(s => s.trim()).map(s => `- ${s.trim()}`).join('\n')}\n\n## Action Steps\n1. Review the concepts covered in this lesson\n2. Complete the reflection questions below\n3. Apply what you've learned to your book project\n\n## Reflection Questions\n- How does this lesson apply to your specific book project?\n- What is one action step you can take this week?\n- How can you seek God's guidance in this area?\n\n## Prayer Point\nLord, guide me as I apply these principles to the book You've called me to write. Give me wisdom, courage, and faithfulness. Amen.`;
+    // Generate generic quiz if lesson-specific not available
+    const defaultQuiz = [
+      { question: `What is the main focus of "${title}"?`, options: ["A) " + (desc.split('.')[0] || title), "B) Social media marketing", "C) Website development", "D) Financial investment strategies"], answer: 0 },
+      { question: `Why is this topic important for Christian authors?`, options: ["A) It's not important", "B) It helps steward the calling God has placed on their hearts", "C) It's only about making money", "D) It's a legal requirement"], answer: 1 },
+      { question: "How should a believer approach this aspect of publishing?", options: ["A) By rushing through it", "B) By ignoring it completely", "C) With prayer, wisdom, and excellence", "D) By copying secular approaches exactly"], answer: 2 },
+      { question: "What is the role of faith in this process?", options: ["A) Faith has no role", "B) Faith provides the foundation for decisions and perseverance", "C) Faith should be kept separate from business", "D) Faith only matters at the end"], answer: 1 },
+      { question: "After completing this lesson, what should you do?", options: ["A) Move to the next lesson without reflection", "B) Apply what you've learned and pray for guidance", "C) Forget everything and start over", "D) Skip to the last module"], answer: 1 }
+    ];
 
-    const quiz = JSON.stringify([
-      { question: `What is the main focus of "${title}"?`, options: ['A) ' + desc.split('.')[0], 'B) General writing tips', 'C) Marketing strategies', 'D) None of the above'], answer: 0 },
-      { question: 'How should a Christian author approach this topic?', options: ['A) With prayer and discernment', 'B) Without any plan', 'C) By copying others', 'D) By rushing through'], answer: 0 }
-    ], null, 2);
+    const quiz = quizBank[num] || defaultQuiz;
+
+    // Generate notes
+    const topicsList = desc.split('.').filter(s => s.trim()).map(s => `- ${s.trim()}`).join('\n');
+    const notes = `# ${title}\n\n## Overview\n${desc}\n\n## Key Takeaways\n${topicsList}\n\n## Action Steps\n- Review the video content and take personal notes\n- Reflect on how this applies to your specific book project\n- Complete the quiz below to test your understanding\n- Pray and ask God for wisdom in applying these principles\n\n## Reflection Questions\n- How does this lesson speak to where you are in your journey?\n- What is one thing you can implement this week?\n- Who can you share this knowledge with?\n\n## Prayer\nLord, thank You for this knowledge. Help me apply it faithfully to the work You've called me to do. Give me courage where I feel uncertain and wisdom where I need direction. In Jesus' name, Amen.`;
+
+    const summary = `This lesson explores: ${desc}\n\nStudents will gain practical understanding and spiritual insight to apply these concepts to their Christian book publishing journey.`;
 
     // Save to DB
     await sb.from('lesson_content').update({
       generated_summary: summary,
       generated_notes: notes,
-      generated_quiz: JSON.parse(quiz)
-    }).eq('lesson_num', parseInt(lessonNum));
+      generated_quiz: quiz
+    }).eq('lesson_num', num);
 
     // Show in UI
     document.getElementById('genSummary').value = summary;
     document.getElementById('genNotes').value = notes;
-    document.getElementById('genQuiz').value = quiz;
+    document.getElementById('genQuiz').value = JSON.stringify(quiz, null, 2);
     document.getElementById('generatedContent').style.display = 'block';
 
-    toast('Content generated and saved!', 'success');
+    toast('Content generated with 5-question quiz!', 'success');
   } catch(e) {
     toast('Error: ' + e.message, 'error');
   }
