@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kratos Publisher — Christian Book Publishing Course</title>
+<meta name="description" content="From Calling to Published Author. A comprehensive 18-lesson course for Christian writers by Kratos Publisher.">
+<meta name="theme-color" content="#0A0A0B">
+<link rel="icon" type="image/jpeg" href="/images/logo.jpg">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ===========================
+   KRATOS PUBLISHER DESIGN SYSTEM
+   Colors from logo: Orange #FF8C00, Yellow #FFD700, 
+   Cyan #00D4FF, Red #FF1744, Blue #2979FF, Magenta #FF00FF
+   =========================== */
+:root {
+  /* Brand Colors */
+  --k-orange: #FF8C00;
+  --k-yellow: #FFD700;
+  --k-cyan: #00D4FF;
+  --k-red: #FF1744;
+  --k-blue: #2979FF;
+  --k-magenta: #FF00FF;
+  
+  /* Surfaces */
+  --bg-primary: #0A0A0B;
+  --bg-secondary: #111114;
+  --bg-card: #16161A;
+  --bg-card-hover: #1C1C21;
+  --bg-elevated: #1E1E24;
+  --bg-input: #1A1A1F;
+  
+  /* Text */
+  --text-primary: #F0F0F2;
+  --text-secondary: #9A9AA8;
+  --text-muted: #6A6A78;
+  --text-accent: var(--k-cyan);
+  
+  /* Borders */
+  --border-subtle: rgba(255,255,255,0.06);
+  --border-medium: rgba(255,255,255,0.1);
+  --border-accent: rgba(0,212,255,0.3);
+  
+  /* Gradients */
+  --grad-brand: linear-gradient(135deg, var(--k-orange), var(--k-red), var(--k-magenta));
+  --grad-cool: linear-gradient(135deg, var(--k-cyan), var(--k-blue));
+  --grad-warm: linear-gradient(135deg, var(--k-orange), var(--k-yellow));
+  --grad-full: linear-gradient(135deg, var(--k-orange), var(--k-red), var(--k-magenta), var(--k-blue), var(--k-cyan));
+  
+  /* Effects */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+  --shadow-glow-cyan: 0 0 30px rgba(0,212,255,0.15);
+  --shadow-glow-orange: 0 0 30px rgba(255,140,0,0.15);
+  
+  --radius: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Sora', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--k-blue); border-radius: 3px; }
+
+::selection {
+  background: rgba(0,212,255,0.25);
+  color: var(--text-primary);
+}
+
+/* ===== HEADER ===== */
+.site-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  background: rgba(10,10,11,0.85);
+  backdrop-filter: blur(24px) saturate(1.2);
+  border-bottom: 1px solid var(--border-subtle);
+  transition: all 0.4s;
+}
+.site-header.scrolled { border-color: var(--border-medium); }
+.header-inner {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+}
+.logo img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.logo-text {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.3rem;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.logo-text span {
+  background: var(--grad-warm);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.nav-links {
+  display: flex; gap: 1.5rem; align-items: center; list-style: none;
+}
+.nav-links a {
+  text-decoration: none; color: var(--text-secondary); font-size: 0.82rem; font-weight: 500;
+  transition: color 0.3s; cursor: pointer;
+}
+.nav-links a:hover { color: var(--text-primary); }
+.nav-progress {
+  font-size: 0.78rem; color: var(--text-muted);
+}
+.nav-progress strong {
+  color: var(--k-cyan); font-weight: 600;
+}
+.header-progress {
+  position: absolute; bottom: 0; left: 0; height: 2px;
+  background: var(--grad-full);
+  transition: width 0.6s ease; border-radius: 1px;
+}
+
+/* Auth button */
+.btn-auth {
+  padding: 0.5rem 1.25rem;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-medium);
+  border-radius: 100px;
+  font-family: 'Sora', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.btn-auth:hover {
+  border-color: var(--k-cyan);
+  background: var(--bg-elevated);
+}
+.user-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--grad-cool);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 600; color: white;
+  cursor: pointer; transition: all 0.3s;
+}
+.user-avatar:hover { box-shadow: var(--shadow-glow-cyan); }
+
+/* ===== AUTH MODAL ===== */
+.auth-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+}
+.auth-overlay.visible { display: flex; }
+.auth-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  box-shadow: var(--shadow-lg);
+}
+.auth-modal-close {
+  position: absolute; top: 1rem; right: 1rem;
+  background: none; border: none; color: var(--text-muted);
+  cursor: pointer; font-size: 1.2rem; transition: color 0.3s;
+}
+.auth-modal-close:hover { color: var(--text-primary); }
+.auth-modal h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem; margin-bottom: 0.35rem;
+}
+.auth-modal p {
+  color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1.5rem;
+}
+.auth-form { display: flex; flex-direction: column; gap: 1rem; }
+.auth-input {
+  padding: 0.85rem 1rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-family: 'Sora', sans-serif;
+  font-size: 0.88rem;
+  transition: border-color 0.3s;
+  outline: none;
+}
+.auth-input:focus { border-color: var(--k-cyan); }
+.auth-input::placeholder { color: var(--text-muted); }
+.btn-submit {
+  padding: 0.9rem;
+  background: var(--grad-cool);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-family: 'Sora', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.btn-submit:hover { transform: translateY(-1px); box-shadow: var(--shadow-glow-cyan); }
+.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.auth-toggle {
+  text-align: center; margin-top: 1rem; font-size: 0.82rem; color: var(--text-muted);
+}
+.auth-toggle a {
+  color: var(--k-cyan); cursor: pointer; text-decoration: none;
+}
+.auth-error {
+  background: rgba(255,23,68,0.1);
+  border: 1px solid rgba(255,23,68,0.2);
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  font-size: 0.82rem;
+  color: var(--k-red);
+  display: none;
+}
+.auth-error.visible { display: block; }
+.auth-success {
+  background: rgba(0,212,255,0.1);
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  font-size: 0.82rem;
+  color: var(--k-cyan);
+  display: none;
+}
+.auth-success.visible { display: block; }
+
+/* ===== HERO ===== */
+.hero {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 7rem 2rem 5rem;
+  position: relative; overflow: hidden;
+}
+.hero-bg {
+  position: absolute; inset: 0; pointer-events: none;
+}
+.hero-bg .orb {
+  position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.12;
+}
+.hero-bg .orb-1 { top: -15%; right: -10%; width: 600px; height: 600px; background: var(--k-orange); }
+.hero-bg .orb-2 { bottom: -20%; left: -10%; width: 500px; height: 500px; background: var(--k-blue); }
+.hero-bg .orb-3 { top: 40%; left: 50%; width: 300px; height: 300px; background: var(--k-magenta); opacity: 0.06; }
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black 20%, transparent 100%);
+}
+.hero-content {
+  max-width: 860px; text-align: center; position: relative; z-index: 1;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.45rem 1.1rem;
+  background: rgba(255,140,0,0.08);
+  border: 1px solid rgba(255,140,0,0.2);
+  border-radius: 100px;
+  font-size: 0.72rem; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--k-orange);
+  margin-bottom: 2rem;
+  opacity: 0; animation: fadeUp 0.7s ease 0.2s forwards;
+}
+.hero-badge .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--k-orange);
+  animation: pulse 2s ease-in-out infinite;
+}
+.hero h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2.8rem, 6vw, 4.8rem);
+  font-weight: 400;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+  opacity: 0; animation: fadeUp 0.7s ease 0.35s forwards;
+}
+.hero h1 .gradient-text {
+  background: var(--grad-full);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-sub {
+  font-size: 1.1rem; color: var(--text-secondary);
+  max-width: 560px; margin: 0 auto 2.5rem;
+  font-weight: 300; line-height: 1.75;
+  opacity: 0; animation: fadeUp 0.7s ease 0.5s forwards;
+}
+.hero-stats {
+  display: flex; justify-content: center; gap: 3rem;
+  margin-bottom: 2.5rem;
+  opacity: 0; animation: fadeUp 0.7s ease 0.65s forwards;
+}
+.hero-stat-num {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.2rem; color: var(--text-primary);
+}
+.hero-stat-label {
+  font-size: 0.72rem; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.hero-cta-group {
+  display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+  opacity: 0; animation: fadeUp 0.7s ease 0.8s forwards;
+}
+.btn-cta {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  padding: 0.95rem 2.2rem;
+  border-radius: 100px;
+  font-family: 'Sora', sans-serif;
+  font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: all 0.4s ease;
+  text-decoration: none; border: none;
+}
+.btn-cta-primary {
+  background: var(--text-primary); color: var(--bg-primary);
+}
+.btn-cta-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(240,240,242,0.15);
+}
+.btn-cta-secondary {
+  background: transparent; color: var(--text-secondary);
+  border: 1px solid var(--border-medium);
+}
+.btn-cta-secondary:hover {
+  border-color: var(--k-cyan); color: var(--k-cyan);
+  transform: translateY(-2px);
+}
+
+/* ===== FEATURES ===== */
+.section { max-width: 1320px; margin: 0 auto; padding: 0 2rem 6rem; }
+.section-header { text-align: center; margin-bottom: 3.5rem; }
+.section-header h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.4rem; font-weight: 400; margin-bottom: 0.6rem;
+}
+.section-header p { color: var(--text-secondary); font-size: 1rem; font-weight: 300; }
+
+.features-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem;
+}
+.feature-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  transition: all 0.4s ease;
+  position: relative; overflow: hidden;
+}
+.feature-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  opacity: 0; transition: opacity 0.4s;
+}
+.feature-card:nth-child(1)::before { background: var(--k-orange); }
+.feature-card:nth-child(2)::before { background: var(--k-cyan); }
+.feature-card:nth-child(3)::before { background: var(--k-magenta); }
+.feature-card:nth-child(4)::before { background: var(--k-yellow); }
+.feature-card:nth-child(5)::before { background: var(--k-blue); }
+.feature-card:nth-child(6)::before { background: var(--k-red); }
+.feature-card:hover {
+  border-color: var(--border-medium);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+.feature-card:hover::before { opacity: 1; }
+.feature-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.25rem; margin-bottom: 1.25rem;
+}
+.feature-card:nth-child(1) .feature-icon { background: rgba(255,140,0,0.1); }
+.feature-card:nth-child(2) .feature-icon { background: rgba(0,212,255,0.1); }
+.feature-card:nth-child(3) .feature-icon { background: rgba(255,0,255,0.1); }
+.feature-card:nth-child(4) .feature-icon { background: rgba(255,215,0,0.1); }
+.feature-card:nth-child(5) .feature-icon { background: rgba(41,121,255,0.1); }
+.feature-card:nth-child(6) .feature-icon { background: rgba(255,23,68,0.1); }
+.feature-card h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.15rem; margin-bottom: 0.5rem;
+}
+.feature-card p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.65; }
+
+/* Module preview cards */
+.module-preview-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; margin-bottom: 3rem;
+}
+.module-preview {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  cursor: pointer; transition: all 0.4s ease;
+  position: relative; overflow: hidden;
+}
+.module-preview:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-md);
+}
+.module-preview-num {
+  font-family: 'DM Serif Display', serif;
+  font-size: 3.5rem; font-weight: 400;
+  position: absolute; top: 0.25rem; right: 1.5rem;
+  line-height: 1;
+  opacity: 0.06; color: var(--text-primary);
+}
+.module-preview-label {
+  font-size: 0.68rem; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+.module-preview:nth-child(1) .module-preview-label { color: var(--k-orange); }
+.module-preview:nth-child(2) .module-preview-label { color: var(--k-cyan); }
+.module-preview:nth-child(3) .module-preview-label { color: var(--k-blue); }
+.module-preview:nth-child(4) .module-preview-label { color: var(--k-yellow); }
+.module-preview:nth-child(5) .module-preview-label { color: var(--k-red); }
+.module-preview:nth-child(6) .module-preview-label { color: var(--k-magenta); }
+.module-preview h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.25rem; margin-bottom: 0.3rem; line-height: 1.3;
+}
+.module-preview .theme {
+  font-size: 0.82rem; color: var(--text-muted);
+  font-style: italic; font-family: 'DM Serif Display', serif;
+  margin-bottom: 0.75rem;
+}
+.module-preview .lessons-count {
+  font-size: 0.75rem; color: var(--text-muted);
+}
+
+/* Scripture */
+.scripture-block {
+  text-align: center; padding: 4rem 2rem; max-width: 680px; margin: 0 auto 2rem;
+}
+.scripture-block blockquote {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.5rem; font-style: italic;
+  color: var(--text-secondary); line-height: 1.5; margin-bottom: 0.75rem;
+}
+.scripture-block cite {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.78rem; font-style: normal;
+  color: var(--k-orange); letter-spacing: 0.06em; font-weight: 500;
+}
+
+/* ===== COURSE LAYOUT ===== */
+.course-layout {
+  display: grid; grid-template-columns: 320px 1fr; gap: 2.5rem;
+  max-width: 1320px; margin: 0 auto; padding: 0 2rem 6rem;
+}
+
+/* Sidebar */
+.sidebar {
+  position: sticky; top: 88px;
+  height: fit-content; max-height: calc(100vh - 108px);
+  overflow-y: auto; padding-right: 0.75rem;
+}
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--k-blue); border-radius: 3px; }
+
+.overall-progress {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  padding: 1.25rem; margin-bottom: 1.25rem;
+}
+.overall-progress-label {
+  display: flex; justify-content: space-between;
+  font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.5rem;
+}
+.overall-progress-label strong { color: var(--k-cyan); }
+.progress-bar-track {
+  height: 5px; background: var(--bg-elevated);
+  border-radius: 3px; overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%; background: var(--grad-cool);
+  border-radius: 3px; transition: width 0.6s ease;
+}
+
+.module-nav-btn {
+  width: 100%;
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.75rem 0.85rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer; font-family: 'Sora', sans-serif;
+  font-size: 0.82rem; font-weight: 500;
+  color: var(--text-muted); text-align: left;
+  transition: all 0.3s ease; margin-bottom: 0.2rem;
+}
+.module-nav-btn:hover {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+}
+.module-nav-btn.active {
+  background: var(--bg-card);
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+.mod-num {
+  width: 26px; height: 26px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700;
+  background: var(--bg-elevated); color: var(--text-muted);
+  flex-shrink: 0; transition: all 0.3s;
+}
+.module-nav-btn.active .mod-num {
+  background: var(--grad-cool); color: white;
+}
+.module-nav-btn.completed .mod-num {
+  background: #1a3a2a; color: #4ade80;
+}
+.mod-dots {
+  display: flex; gap: 3px; margin-top: 0.15rem; padding-left: 2.85rem;
+}
+.mod-dot {
+  width: 16px; height: 3px; border-radius: 2px;
+  background: var(--bg-elevated); transition: background 0.3s;
+}
+.mod-dot.done { background: #4ade80; }
+.mod-dot.current { background: var(--k-cyan); }
+
+/* ===== MAIN CONTENT ===== */
+.main-content { min-height: 80vh; }
+
+.module-header {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem; margin-bottom: 1.25rem;
+  position: relative; overflow: hidden;
+}
+.module-header::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--grad-full);
+}
+.module-badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.68rem; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--k-cyan); margin-bottom: 0.75rem;
+}
+.module-header h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.9rem; font-weight: 400; line-height: 1.25; margin-bottom: 0.4rem;
+}
+.module-theme {
+  font-size: 0.92rem; color: var(--text-muted);
+  font-style: italic; font-family: 'DM Serif Display', serif;
+}
+
+/* Lesson Cards */
+.lesson-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  margin-bottom: 0.75rem;
+  overflow: hidden; transition: all 0.3s ease;
+}
+.lesson-card:hover {
+  border-color: var(--border-medium);
+}
+.lesson-card.active {
+  border-color: var(--k-cyan);
+  box-shadow: var(--shadow-glow-cyan);
+}
+.lesson-card.done { border-left: 3px solid #4ade80; }
+
+.lesson-header {
+  padding: 1.25rem 1.75rem;
+  display: flex; align-items: center; gap: 1.1rem;
+  cursor: pointer; transition: background 0.2s;
+}
+.lesson-header:hover { background: var(--bg-card-hover); }
+
+.lesson-num {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.05rem; font-weight: 400;
+  background: var(--bg-elevated); color: var(--text-muted);
+  flex-shrink: 0; transition: all 0.4s;
+}
+.lesson-card.active .lesson-num { background: var(--grad-cool); color: white; }
+.lesson-card.done .lesson-num { background: #1a3a2a; color: #4ade80; }
+
+.lesson-info { flex: 1; }
+.lesson-title {
+  font-size: 0.95rem; font-weight: 600; color: var(--text-primary);
+  margin-bottom: 0.1rem;
+}
+.lesson-meta {
+  font-size: 0.75rem; color: var(--text-muted);
+  display: flex; gap: 0.75rem;
+}
+
+.lesson-toggle {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; background: var(--bg-elevated);
+  transition: all 0.3s; flex-shrink: 0;
+}
+.lesson-card.active .lesson-toggle { transform: rotate(180deg); }
+
+.lesson-content {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.5s ease;
+}
+.lesson-card.active .lesson-content {
+  max-height: 800px;
+  padding: 0 1.75rem 1.75rem 4.6rem;
+}
+
+.lesson-body {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+.lesson-topics { list-style: none; margin: 0.75rem 0; }
+.lesson-topics li {
+  padding: 0.55rem 0; padding-left: 1.25rem;
+  position: relative; color: var(--text-secondary);
+  font-size: 0.87rem; border-bottom: 1px solid var(--border-subtle);
+}
+.lesson-topics li:last-child { border-bottom: none; }
+.lesson-topics li::before {
+  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 5px; height: 5px; border-radius: 50%; background: var(--k-cyan); opacity: 0.5;
+}
+
+.completion-check {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-top: 1rem; cursor: pointer; font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.completion-check input { display: none; }
+.check-box {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border-medium);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s; flex-shrink: 0;
+}
+.completion-check:hover .check-box { border-color: var(--k-cyan); }
+.completion-check input:checked ~ .check-box {
+  background: #1a3a2a; border-color: #4ade80; color: #4ade80;
+}
+.completion-check input:checked ~ .check-box::after { content: '✓'; font-size: 0.65rem; font-weight: 700; }
+
+.lesson-actions {
+  display: flex; gap: 0.6rem; margin-top: 1.1rem;
+}
+.btn-lesson {
+  padding: 0.6rem 1.4rem; border-radius: 100px;
+  font-family: 'Sora', sans-serif; font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; transition: all 0.3s; border: none;
+}
+.btn-primary { background: var(--text-primary); color: var(--bg-primary); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(240,240,242,0.15); }
+.btn-secondary {
+  background: transparent; color: var(--text-secondary);
+  border: 1px solid var(--border-medium);
+}
+.btn-secondary:hover { border-color: var(--k-cyan); color: var(--k-cyan); }
+
+/* Next module */
+.next-module-card {
+  text-align: center; padding: 2.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  margin-top: 1rem;
+}
+.next-module-card p { color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.75rem; }
+
+/* ===== VIEWS ===== */
+.view { display: none; }
+.view.visible { display: block; }
+
+/* ===== FOOTER ===== */
+.site-footer {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+  padding: 2.5rem 2rem;
+  text-align: center; font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.site-footer a { color: var(--k-cyan); text-decoration: none; }
+.footer-brand {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.1rem; color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.fade-in { opacity: 0; animation: fadeIn 0.5s ease forwards; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .course-layout { grid-template-columns: 260px 1fr; gap: 1.5rem; }
+}
+@media (max-width: 768px) {
+  .course-layout { grid-template-columns: 1fr; }
+  .sidebar {
+    position: relative; top: 0; max-height: none;
+    display: flex; overflow-x: auto; gap: 0.35rem;
+    padding-bottom: 1rem; padding-right: 0;
+  }
+  .module-nav-item { flex-shrink: 0; }
+  .mod-dots, .overall-progress { display: none; }
+  .features-grid { grid-template-columns: 1fr; }
+  .module-preview-grid { grid-template-columns: 1fr; }
+  .hero-stats { gap: 1.5rem; }
+  .nav-links .hide-mobile { display: none; }
+  .lesson-card.active .lesson-content { padding-left: 1.75rem; }
+  .header-inner { padding: 0 1rem; }
+  .course-layout, .section { padding-left: 1rem; padding-right: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header" id="siteHeader">
+  <div class="header-inner">
+    <a class="logo" href="#" onclick="showWelcome(); return false;">
+      <img src="/images/logo.jpg" alt="Kratos Publisher">
+      <span class="logo-text"><span>Kratos</span> Publisher</span>
+    </a>
+    <ul class="nav-links">
+      <li class="hide-mobile"><a onclick="showWelcome()">Home</a></li>
+      <li class="hide-mobile"><a onclick="startCourse()">Curriculum</a></li>
+      <li class="nav-progress hide-mobile">Progress: <strong id="progressPct">0%</strong></li>
+      <li id="authContainer"></li>
+    </ul>
+  </div>
+  <div class="header-progress" id="headerProgress" style="width:0%"></div>
+</header>
+
+<!-- AUTH MODAL -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-modal">
+    <button class="auth-modal-close" onclick="closeAuth()">✕</button>
+    <h2 id="authTitle">Welcome Back</h2>
+    <p id="authSubtitle">Sign in to track your progress</p>
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-success" id="authSuccess"></div>
+    <form class="auth-form" id="authForm" onsubmit="handleAuth(event)">
+      <input class="auth-input" type="email" id="authEmail" placeholder="Email address" required>
+      <input class="auth-input" type="password" id="authPassword" placeholder="Password" required minlength="6">
+      <button class="btn-submit" type="submit" id="authSubmit">Sign In</button>
+    </form>
+    <div class="auth-toggle">
+      <span id="authToggleText">Don't have an account?</span>
+      <a id="authToggleLink" onclick="toggleAuthMode()"> Sign Up</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WELCOME VIEW ===== -->
+<div class="view visible" id="welcomeView">
+  <section class="hero">
+    <div class="hero-bg">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+      <div class="hero-grid"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="dot"></span>
+        Kratos Publisher Academy
+      </div>
+      <h1>From Calling to<br><span class="gradient-text">Published Author</span></h1>
+      <p class="hero-sub">A comprehensive 18-lesson journey for Christian writers who believe God has placed a book on their heart — and want to steward it with excellence.</p>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="hero-stat-num">6</div><div class="hero-stat-label">Modules</div></div>
+        <div class="hero-stat"><div class="hero-stat-num">18</div><div class="hero-stat-label">Lessons</div></div>
+        <div class="hero-stat"><div class="hero-stat-num">∞</div><div class="hero-stat-label">Impact</div></div>
+      </div>
+      <div class="hero-cta-group">
+        <a class="btn-cta btn-cta-primary" onclick="startCourse()">
+          Begin Your Journey
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a class="btn-cta btn-cta-secondary" onclick="openAuth()">
+          Sign In to Save Progress
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="scripture-block">
+      <blockquote>"Whatever you do, work at it with all your heart, as working for the Lord."</blockquote>
+      <cite>— Colossians 3:23 (NIV)</cite>
+    </div>
+
+    <div class="section-header">
+      <h2>What You'll Learn</h2>
+      <p>Six modules covering every stage of the Christian publishing journey</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🕊️</div>
+        <h3>Discern Your Calling</h3>
+        <p>Distinguish God's timing from personal ambition through prayer, discernment, and confirmation.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📖</div>
+        <h3>Write with Excellence</h3>
+        <p>Structure your book, create writing schedules, and overcome fear while honoring God with your craft.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛤️</div>
+        <h3>Choose Your Path</h3>
+        <p>Understand traditional, self, and hybrid publishing to find the right fit for your ministry.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚖️</div>
+        <h3>Handle the Business</h3>
+        <p>Navigate ISBNs, copyrights, cover design, pricing, and distribution with integrity.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🚀</div>
+        <h3>Launch Faithfully</h3>
+        <p>Prepare spiritually and practically for launch with marketing strategies that honor your mission.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌱</div>
+        <h3>Grow Your Ministry</h3>
+        <p>Build a lasting author platform, use your book for discipleship, and think legacy.</p>
+      </div>
+    </div>
+
+    <div class="section-header" style="margin-top:2rem;">
+      <h2>Course Modules</h2>
+      <p>Click any module to jump right in</p>
+    </div>
+
+    <div class="module-preview-grid" id="modulePreviewGrid"></div>
+
+    <div style="text-align:center; padding: 2rem 0;">
+      <a class="btn-cta btn-cta-primary" onclick="startCourse()" style="opacity:1;animation:none;">
+        Start Learning →
+      </a>
+    </div>
+  </section>
+</div>
+
+<!-- ===== COURSE VIEW ===== -->
+<div class="view" id="courseView">
+  <div style="padding-top: 86px;"></div>
+  <div class="course-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main-content" id="mainContent"></main>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-brand">Kratos Publisher</div>
+  <p>© 2026 Kratos Publisher — A faith-based course for aspiring Christian authors.</p>
+  <p style="margin-top:0.4rem;">Built with prayer and purpose.</p>
+</footer>
+
+<script>
+// ========== COURSE DATA ==========
+const courseData = [
+  {
+    id: 1, title: "The Calling & Clarity Stage",
+    theme: "Writing as ministry, not just a product",
+    color: "var(--k-orange)",
+    lessons: [
+      { num: 1, title: "Is God Calling You to Write This Book?", duration: "25 min", type: "Video + Reflection",
+        topics: ["Writing as stewardship","Distinguishing God's timing vs. personal ambition","Prayer, discernment, and confirmation"] },
+      { num: 2, title: "Defining Your Message & Audience", duration: "20 min", type: "Workshop",
+        topics: ["Who is this book for?","What problem does it solve spiritually?","Narrowing your Christian niche (devotional, theology, memoir, fiction, leadership, etc.)"] },
+      { num: 3, title: "Choosing the Right Type of Christian Book", duration: "30 min", type: "Guide + Quiz",
+        topics: ["Devotional","Bible study","Christian living","Memoir / testimony","Fiction","Ministry / leadership","How format affects publishing options"] }
+    ]
+  },
+  {
+    id: 2, title: "Preparing Your Manuscript for Publication",
+    theme: "Excellence honors God",
+    color: "var(--k-cyan)",
+    lessons: [
+      { num: 4, title: "Writing with Excellence (Not Perfectionism)", duration: "30 min", type: "Video + Exercises",
+        topics: ["Structuring your book","Writing schedules for busy believers","Overcoming fear, doubt, and comparison"] },
+      { num: 5, title: "Editing Your Christian Book", duration: "25 min", type: "Workshop",
+        topics: ["Types of editing (developmental, copy, proof)","Faith-based editors vs. general editors","How to prepare spiritually and practically for feedback"] },
+      { num: 6, title: "Beta Readers, Sensitivity & Theology Checks", duration: "20 min", type: "Checklist + Guide",
+        topics: ["Who should review your book","Avoiding doctrinal confusion","Receiving critique with humility"] }
+    ]
+  },
+  {
+    id: 3, title: "Understanding Publishing Options",
+    theme: "Choosing the path God has for your book",
+    color: "var(--k-blue)",
+    lessons: [
+      { num: 7, title: "Traditional Christian Publishing", duration: "30 min", type: "Deep Dive",
+        topics: ["How Christian publishers work","Pros and cons","What publishers look for","Timelines and expectations"] },
+      { num: 8, title: "Self-Publishing for Christian Authors", duration: "35 min", type: "Step-by-Step Guide",
+        topics: ["Amazon KDP, IngramSpark, etc.","Costs and responsibilities","When self-publishing makes sense for ministry"] },
+      { num: 9, title: "Hybrid & Assisted Publishing", duration: "20 min", type: "Guide + Red Flags",
+        topics: ["What hybrid publishing really is","How to avoid scams","Questions to ask before paying anyone"] }
+    ]
+  },
+  {
+    id: 4, title: "The Business Side (Handled with Integrity)",
+    theme: "Faithful stewardship of resources",
+    color: "var(--k-yellow)",
+    lessons: [
+      { num: 10, title: "ISBNs, Copyright, & Legal Basics", duration: "25 min", type: "Reference Guide",
+        topics: ["Copyrighting your work","ISBNs explained","Pen names and ministries"] },
+      { num: 11, title: "Book Cover & Interior Design", duration: "30 min", type: "Visual Workshop",
+        topics: ["Why Christian readers judge covers","What makes a Christian cover effective","Working with designers"] },
+      { num: 12, title: "Pricing & Distribution", duration: "20 min", type: "Strategy Session",
+        topics: ["Pricing for ministry vs. profit","Print, ebook, audiobook options","Churches, bookstores, and online platforms"] }
+    ]
+  },
+  {
+    id: 5, title: "Launching Your Christian Book",
+    theme: "Faith + strategy",
+    color: "var(--k-red)",
+    lessons: [
+      { num: 13, title: "Preparing for Launch (Spiritually & Practically)", duration: "25 min", type: "Action Plan",
+        topics: ["Prayer teams","Soft vs. hard launches","Setting realistic expectations"] },
+      { num: 14, title: "Marketing Without Compromising Your Faith", duration: "35 min", type: "Strategy Workshop",
+        topics: ["Email lists","Social media (without burnout)","Speaking engagements, churches, podcasts","Reviews and testimonials"] },
+      { num: 15, title: "Launch Day & Beyond", duration: "20 min", type: "Guide + Reflection",
+        topics: ["What actually matters on launch day","Common mistakes Christian authors make","Staying faithful after the excitement fades"] }
+    ]
+  },
+  {
+    id: 6, title: "Long-Term Impact & Ministry Growth",
+    theme: "Faithfulness after publication",
+    color: "var(--k-magenta)",
+    lessons: [
+      { num: 16, title: "Using Your Book for Ministry", duration: "25 min", type: "Strategy Session",
+        topics: ["Teaching, discipleship, small groups","Church partnerships","Missions and outreach"] },
+      { num: 17, title: "Building an Author Platform God Can Use", duration: "30 min", type: "Workshop",
+        topics: ["Authority without pride","Consistency without pressure","Boundaries for ministry authors"] },
+      { num: 18, title: "Next Steps After Your First Book", duration: "20 min", type: "Vision Casting",
+        topics: ["Should you write another?","Expanding formats (workbooks, studies)","Legacy thinking"] }
+    ]
+  }
+];
+
+// ========== SUPABASE CONFIG ==========
+// Replace these with your Supabase project credentials
+const SUPABASE_URL = 'https://ywpdiapocrjzabnqixoq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cGRpYXBvY3JqemFibnFpeG9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MTE1MDAsImV4cCI6MjA4NzQ4NzUwMH0.nlOpULiCGsXPzqcs9phd4MNccpxRCjDoxXoPReeIPNg';
+let supabase = null;
+let currentUser = null;
+
+if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  supabase = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+// ========== STATE ==========
+let currentModule = 0;
+let completedLessons = new Set();
+let activeLessonCard = null;
+let authMode = 'signin'; // 'signin' or 'signup'
+
+// Load local progress
+try {
+  const saved = localStorage.getItem('kratos_progress');
+  if (saved) completedLessons = new Set(JSON.parse(saved));
+} catch(e) {}
+
+function saveProgress() {
+  try {
+    localStorage.setItem('kratos_progress', JSON.stringify([...completedLessons]));
+  } catch(e) {}
+  // Also save to Supabase if logged in
+  if (supabase && currentUser) {
+    supabase.from('user_progress').upsert({
+      user_id: currentUser.id,
+      completed_lessons: [...completedLessons],
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' }).then(() => {});
+  }
+}
+
+async function loadUserProgress() {
+  if (!supabase || !currentUser) return;
+  try {
+    const { data } = await supabase
+      .from('user_progress')
+      .select('completed_lessons')
+      .eq('user_id', currentUser.id)
+      .single();
+    if (data?.completed_lessons) {
+      completedLessons = new Set(data.completed_lessons);
+      localStorage.setItem('kratos_progress', JSON.stringify(data.completed_lessons));
+    }
+  } catch(e) {}
+}
+
+// ========== AUTH ==========
+function openAuth() {
+  document.getElementById('authOverlay').classList.add('visible');
+  document.getElementById('authEmail').focus();
+}
+function closeAuth() {
+  document.getElementById('authOverlay').classList.remove('visible');
+  document.getElementById('authError').classList.remove('visible');
+  document.getElementById('authSuccess').classList.remove('visible');
+}
+function toggleAuthMode() {
+  authMode = authMode === 'signin' ? 'signup' : 'signin';
+  document.getElementById('authTitle').textContent = authMode === 'signin' ? 'Welcome Back' : 'Create Account';
+  document.getElementById('authSubtitle').textContent = authMode === 'signin' ? 'Sign in to track your progress' : 'Start your publishing journey';
+  document.getElementById('authSubmit').textContent = authMode === 'signin' ? 'Sign In' : 'Create Account';
+  document.getElementById('authToggleText').textContent = authMode === 'signin' ? "Don't have an account?" : 'Already have an account?';
+  document.getElementById('authToggleLink').textContent = authMode === 'signin' ? ' Sign Up' : ' Sign In';
+  document.getElementById('authError').classList.remove('visible');
+  document.getElementById('authSuccess').classList.remove('visible');
+}
+
+async function handleAuth(e) {
+  e.preventDefault();
+  const email = document.getElementById('authEmail').value;
+  const password = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authError');
+  const successEl = document.getElementById('authSuccess');
+  const btn = document.getElementById('authSubmit');
+  
+  errEl.classList.remove('visible');
+  successEl.classList.remove('visible');
+  btn.disabled = true;
+  btn.textContent = 'Please wait...';
+  
+  if (!supabase) {
+    errEl.textContent = 'Authentication not configured. Add your Supabase credentials to go live.';
+    errEl.classList.add('visible');
+    btn.disabled = false;
+    btn.textContent = authMode === 'signin' ? 'Sign In' : 'Create Account';
+    return;
+  }
+  
+  try {
+    let result;
+    if (authMode === 'signup') {
+      result = await supabase.auth.signUp({ email, password });
+    } else {
+      result = await supabase.auth.signInWithPassword({ email, password });
+    }
+    
+    if (result.error) throw result.error;
+    
+    if (authMode === 'signup') {
+      successEl.textContent = 'Account created! Check your email to confirm.';
+      successEl.classList.add('visible');
+    } else {
+      currentUser = result.data.user;
+      await loadUserProgress();
+      closeAuth();
+      updateAuthUI();
+      renderSidebar();
+      if (document.getElementById('courseView').classList.contains('visible')) {
+        renderMainContent();
+      }
+    }
+  } catch (err) {
+    errEl.textContent = err.message || 'Something went wrong. Try again.';
+    errEl.classList.add('visible');
+  }
+  
+  btn.disabled = false;
+  btn.textContent = authMode === 'signin' ? 'Sign In' : 'Create Account';
+}
+
+async function signOut() {
+  if (supabase) await supabase.auth.signOut();
+  currentUser = null;
+  updateAuthUI();
+}
+
+function updateAuthUI() {
+  const container = document.getElementById('authContainer');
+  if (currentUser) {
+    const initial = (currentUser.email || 'U')[0].toUpperCase();
+    container.innerHTML = `
+      <div class="user-avatar" onclick="signOut()" title="Sign Out">${initial}</div>
+    `;
+  } else {
+    container.innerHTML = `
+      <button class="btn-auth" onclick="openAuth()">Sign In</button>
+    `;
+  }
+}
+
+// Check session on load
+async function checkSession() {
+  if (!supabase) { updateAuthUI(); return; }
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      currentUser = session.user;
+      await loadUserProgress();
+    }
+  } catch(e) {}
+  updateAuthUI();
+}
+
+// ========== RENDER ==========
+function renderModulePreviews() {
+  const grid = document.getElementById('modulePreviewGrid');
+  grid.innerHTML = courseData.map((mod, i) => `
+    <div class="module-preview" onclick="startCourse(${i})">
+      <div class="module-preview-num">${String(mod.id).padStart(2,'0')}</div>
+      <div class="module-preview-label">Module ${mod.id}</div>
+      <h3>${mod.title}</h3>
+      <div class="theme">${mod.theme}</div>
+      <div class="lessons-count">${mod.lessons.length} lessons · ${mod.lessons.reduce((s,l) => s + parseInt(l.duration), 0)} min</div>
+    </div>
+  `).join('');
+}
+
+function renderSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const total = courseData.reduce((s, m) => s + m.lessons.length, 0);
+  const pct = Math.round((completedLessons.size / total) * 100);
+
+  let html = `
+    <div class="overall-progress">
+      <div class="overall-progress-label">
+        <span>Course Progress</span>
+        <strong>${completedLessons.size}/${total} lessons · ${pct}%</strong>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" style="width:${pct}%"></div>
+      </div>
+    </div>
+  `;
+
+  courseData.forEach((mod, i) => {
+    const isActive = i === currentModule;
+    const allDone = mod.lessons.every(l => completedLessons.has(l.num));
+    let cls = isActive ? 'active' : '';
+    if (allDone) cls += ' completed';
+
+    html += `
+      <div class="module-nav-item">
+        <button class="module-nav-btn ${cls}" onclick="switchModule(${i})">
+          <span class="mod-num">${allDone ? '✓' : mod.id}</span>
+          <span style="line-height:1.3">${mod.title}</span>
+        </button>
+        <div class="mod-dots">
+          ${mod.lessons.map(l => {
+            let dotCls = completedLessons.has(l.num) ? 'done' : '';
+            if (!dotCls && i === currentModule) dotCls = 'current';
+            return `<div class="mod-dot ${dotCls}"></div>`;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  });
+
+  sidebar.innerHTML = html;
+  document.getElementById('headerProgress').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+function renderMainContent() {
+  const mod = courseData[currentModule];
+  const main = document.getElementById('mainContent');
+
+  let html = `
+    <div class="module-header fade-in">
+      <div class="module-badge">✦ MODULE ${mod.id} OF 6</div>
+      <h2>${mod.title}</h2>
+      <div class="module-theme">"${mod.theme}"</div>
+    </div>
+  `;
+
+  mod.lessons.forEach((lesson, i) => {
+    const isDone = completedLessons.has(lesson.num);
+    const cid = `lesson-${lesson.num}`;
+    html += `
+      <div class="lesson-card ${isDone ? 'done' : ''} fade-in" id="${cid}" style="animation-delay:${(i+1)*0.08}s">
+        <div class="lesson-header" onclick="toggleLesson('${cid}')">
+          <div class="lesson-num">${isDone ? '✓' : lesson.num}</div>
+          <div class="lesson-info">
+            <div class="lesson-title">${lesson.title}</div>
+            <div class="lesson-meta">
+              <span>${lesson.duration}</span><span>·</span><span>${lesson.type}</span>
+            </div>
+          </div>
+          <div class="lesson-toggle">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="lesson-content">
+          <div class="lesson-body">
+            <ul class="lesson-topics">
+              ${lesson.topics.map(t => `<li>${t}</li>`).join('')}
+            </ul>
+            <label class="completion-check" onclick="event.stopPropagation()">
+              <input type="checkbox" ${isDone ? 'checked' : ''} onchange="toggleComplete(${lesson.num}, this.checked)">
+              <span class="check-box"></span>
+              <span>Mark as completed</span>
+            </label>
+            <div class="lesson-actions">
+              <button class="btn-lesson btn-primary">Start Lesson</button>
+              <button class="btn-lesson btn-secondary">Download Notes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  if (currentModule < courseData.length - 1) {
+    const next = courseData[currentModule + 1];
+    html += `
+      <div class="next-module-card fade-in" style="animation-delay:0.4s">
+        <p>Up next</p>
+        <button class="btn-lesson btn-primary" onclick="switchModule(${currentModule + 1})" style="padding:0.75rem 2rem;font-size:0.88rem;">
+          Module ${next.id}: ${next.title} →
+        </button>
+      </div>
+    `;
+  } else {
+    html += `
+      <div class="next-module-card fade-in" style="animation-delay:0.4s">
+        <p style="font-family:'DM Serif Display',serif; font-size:1.4rem; font-style:italic; color:var(--text-secondary); margin-bottom:0.4rem;">
+          "Well done, good and faithful servant."
+        </p>
+        <p style="color:var(--k-orange); letter-spacing:0.06em; font-weight:500;">— Matthew 25:21</p>
+      </div>
+    `;
+  }
+
+  main.innerHTML = html;
+}
+
+// ========== INTERACTIONS ==========
+function toggleLesson(cid) {
+  const card = document.getElementById(cid);
+  if (activeLessonCard && activeLessonCard !== card) activeLessonCard.classList.remove('active');
+  card.classList.toggle('active');
+  activeLessonCard = card.classList.contains('active') ? card : null;
+}
+
+function toggleComplete(num, checked) {
+  if (checked) completedLessons.add(num);
+  else completedLessons.delete(num);
+  saveProgress();
+  renderSidebar();
+  const card = document.getElementById(`lesson-${num}`);
+  if (card) {
+    card.classList.toggle('done', checked);
+    const n = card.querySelector('.lesson-num');
+    if (n) n.textContent = checked ? '✓' : num;
+  }
+}
+
+function switchModule(i) {
+  currentModule = i;
+  activeLessonCard = null;
+  renderSidebar();
+  renderMainContent();
+  window.scrollTo({ top: 86, behavior: 'smooth' });
+}
+
+function showWelcome() {
+  document.getElementById('welcomeView').classList.add('visible');
+  document.getElementById('courseView').classList.remove('visible');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function startCourse(mi) {
+  if (typeof mi === 'number') currentModule = mi;
+  document.getElementById('welcomeView').classList.remove('visible');
+  document.getElementById('courseView').classList.add('visible');
+  renderSidebar();
+  renderMainContent();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Header scroll
+window.addEventListener('scroll', () => {
+  document.getElementById('siteHeader').classList.toggle('scrolled', window.scrollY > 10);
+});
+
+// Close modal on overlay click
+document.getElementById('authOverlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeAuth();
+});
+
+// ========== INIT ==========
+renderModulePreviews();
+checkSession();
+</script>
+</body>
+</html>
