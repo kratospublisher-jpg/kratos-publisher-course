@@ -1007,11 +1007,11 @@ const courseData = [
 // Replace these with your Supabase project credentials
 const SUPABASE_URL = 'https://ywpdiapocrjzabnqixoq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cGRpYXBvY3JqemFibnFpeG9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MTE1MDAsImV4cCI6MjA4NzQ4NzUwMH0.nlOpULiCGsXPzqcs9phd4MNccpxRCjDoxXoPReeIPNg';
-let supabase = null;
+let sb = null;
 let currentUser = null;
 
 if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-  supabase = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
 // ========== STATE ==========
@@ -1031,9 +1031,9 @@ function saveProgress() {
     localStorage.setItem('kratos_progress', JSON.stringify([...completedLessons]));
   } catch(e) {}
   // Save to Supabase if logged in (per-lesson tracking)
-  if (supabase && currentUser) {
+  if (sb && currentUser) {
     completedLessons.forEach(lessonNum => {
-      supabase.from('user_progress').upsert({
+      sb.from('user_progress').upsert({
         user_id: currentUser.id,
         lesson_num: lessonNum,
         completed: true,
@@ -1041,7 +1041,7 @@ function saveProgress() {
       }, { onConflict: 'user_id,lesson_num' }).then(() => {});
     });
     // Log activity
-    supabase.from('activity_log').insert({
+    sb.from('activity_log').insert({
       user_id: currentUser.id,
       action: 'progress_updated',
       metadata: { completed: [...completedLessons] }
@@ -1050,9 +1050,9 @@ function saveProgress() {
 }
 
 async function loadUserProgress() {
-  if (!supabase || !currentUser) return;
+  if (!sb || !currentUser) return;
   try {
-    const { data } = await supabase
+    const { data } = await sb
       .from('user_progress')
       .select('lesson_num')
       .eq('user_id', currentUser.id)
@@ -1098,7 +1098,7 @@ async function handleAuth(e) {
   btn.disabled = true;
   btn.textContent = 'Please wait...';
   
-  if (!supabase) {
+  if (!sb) {
     errEl.textContent = 'Authentication not configured. Add your Supabase credentials to go live.';
     errEl.classList.add('visible');
     btn.disabled = false;
@@ -1109,9 +1109,9 @@ async function handleAuth(e) {
   try {
     let result;
     if (authMode === 'signup') {
-      result = await supabase.auth.signUp({ email, password });
+      result = await sb.auth.signUp({ email, password });
     } else {
-      result = await supabase.auth.signInWithPassword({ email, password });
+      result = await sb.auth.signInWithPassword({ email, password });
     }
     
     if (result.error) throw result.error;
@@ -1139,7 +1139,7 @@ async function handleAuth(e) {
 }
 
 async function signOut() {
-  if (supabase) await supabase.auth.signOut();
+  if (sb) await sb.auth.signOut();
   currentUser = null;
   updateAuthUI();
 }
@@ -1160,9 +1160,9 @@ function updateAuthUI() {
 
 // Check session on load
 async function checkSession() {
-  if (!supabase) { updateAuthUI(); return; }
+  if (!sb) { updateAuthUI(); return; }
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await sb.auth.getSession();
     if (session?.user) {
       currentUser = session.user;
       await loadUserProgress();
