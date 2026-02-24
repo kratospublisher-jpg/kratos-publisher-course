@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Dashboard — Kratos Publisher</title>
+<link rel="icon" type="image/jpeg" href="/images/logo.jpg">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --k-orange:#FF8C00;--k-yellow:#FFD700;--k-cyan:#00D4FF;
+  --k-red:#FF1744;--k-blue:#2979FF;--k-magenta:#FF00FF;
+  --bg:#0A0A0B;--bg2:#111114;--bg-card:#16161A;
+  --bg-hover:#1C1C21;--bg-el:#1E1E24;--bg-input:#1A1A1F;
+  --text:#F0F0F2;--text2:#9A9AA8;--text3:#6A6A78;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);
+  --green:#4ade80;--green-bg:rgba(74,222,128,0.1);
+  --r:12px;--rl:18px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--k-blue);border-radius:3px}
+a{color:var(--k-cyan);text-decoration:none}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+
+/* Sidebar */
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.side-logo{display:flex;align-items:center;gap:0.6rem;padding:0 1.5rem;margin-bottom:0.4rem;text-decoration:none}
+.side-logo img{width:32px;height:32px;border-radius:8px}
+.side-logo span{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--text)}
+
+.side-user{padding:0.75rem 1.5rem;margin-bottom:1rem;border-bottom:1px solid var(--border);padding-bottom:1rem}
+.side-user-name{font-size:0.9rem;font-weight:600;color:var(--text)}
+.side-user-email{font-size:0.72rem;color:var(--text3);word-break:break-all}
+.side-stage{display:inline-block;margin-top:0.4rem;padding:0.15rem 0.5rem;border-radius:100px;font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em}
+.stage-idea{background:rgba(0,212,255,0.1);color:var(--k-cyan)}
+.stage-writing{background:rgba(255,140,0,0.1);color:var(--k-orange)}
+.stage-editing{background:rgba(255,215,0,0.1);color:var(--k-yellow)}
+.stage-ready{background:var(--green-bg);color:var(--green)}
+
+.side-nav{list-style:none}
+.side-nav li{margin-bottom:2px}
+.side-nav a{display:flex;align-items:center;gap:0.7rem;padding:0.65rem 1.5rem;color:var(--text3);font-size:0.83rem;font-weight:500;text-decoration:none;transition:all 0.2s;border-left:3px solid transparent;cursor:pointer}
+.side-nav a:hover{background:var(--bg-card);color:var(--text2)}
+.side-nav a.active{background:var(--bg-card);color:var(--text);border-left-color:var(--k-cyan)}
+.side-nav .icon{font-size:1rem;width:20px;text-align:center}
+.side-div{height:1px;background:var(--border);margin:0.75rem 1.5rem}
+
+/* Main */
+.main{padding:2rem 2.5rem;overflow-y:auto}
+
+/* Page */
+.pg{display:none}.pg.on{display:block}
+
+/* Header */
+.pg-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
+.pg-head h1{font-family:'DM Serif Display',serif;font-size:1.7rem;font-weight:400}
+
+/* Cards */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--rl);padding:1.75rem;margin-bottom:1.25rem;transition:border-color 0.3s}
+.card:hover{border-color:var(--border2)}
+.card h2{font-family:'DM Serif Display',serif;font-size:1.15rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem}
+.card h3{font-size:0.9rem;font-weight:600;margin-bottom:0.75rem}
+
+/* Stats row */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.stat{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;text-align:center}
+.stat-val{font-family:'DM Serif Display',serif;font-size:1.8rem}
+.stat-lbl{font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-top:0.2rem}
+
+/* Progress */
+.prog-track{height:8px;background:var(--bg-el);border-radius:4px;overflow:hidden;margin:0.5rem 0}
+.prog-fill{height:100%;border-radius:4px;transition:width 0.6s}
+
+/* Form elements */
+.fg{margin-bottom:1rem}
+.fl{display:block;font-size:0.72rem;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.35rem}
+.fi,.ft,.fs{width:100%;padding:0.65rem 0.9rem;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Sora',sans-serif;font-size:0.85rem;outline:none;transition:border-color 0.3s}
+.fi:focus,.ft:focus,.fs:focus{border-color:var(--k-cyan)}
+.ft{min-height:80px;resize:vertical}
+.fs{cursor:pointer}
+.fs option{background:var(--bg-card)}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.fg-full{grid-column:1/-1}
+.toggle{display:flex;align-items:center;gap:0.6rem;cursor:pointer;font-size:0.85rem;color:var(--text2)}
+.toggle input{display:none}
+.toggle-track{width:36px;height:20px;border-radius:10px;background:var(--bg-el);position:relative;transition:background 0.3s}
+.toggle input:checked+.toggle-track{background:var(--k-cyan)}
+.toggle-track::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:white;top:2px;left:2px;transition:transform 0.3s}
+.toggle input:checked+.toggle-track::after{transform:translateX(16px)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.55rem 1.1rem;border-radius:8px;font-family:'Sora',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.3s;border:none}
+.btn-p{background:var(--k-cyan);color:var(--bg)}.btn-p:hover{opacity:0.9}
+.btn-s{background:var(--bg-el);color:var(--text2);border:1px solid var(--border2)}.btn-s:hover{border-color:var(--k-cyan)}
+.btn-d{background:rgba(255,23,68,0.1);color:var(--k-red)}.btn-d:hover{background:rgba(255,23,68,0.2)}
+.btn-sm{padding:0.4rem 0.8rem;font-size:0.75rem}
+
+/* Badge */
+.badge{display:inline-block;padding:0.2rem 0.55rem;border-radius:100px;font-size:0.68rem;font-weight:600}
+
+/* Lesson list in dashboard */
+.lesson-row{display:flex;align-items:center;gap:1rem;padding:0.7rem 0;border-bottom:1px solid var(--border)}
+.lesson-row:last-child{border-bottom:none}
+.lesson-num-circle{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;background:var(--bg-el);color:var(--text3);flex-shrink:0}
+.lesson-row.done .lesson-num-circle{background:var(--green-bg);color:var(--green)}
+.lesson-row.current .lesson-num-circle{background:rgba(0,212,255,0.15);color:var(--k-cyan)}
+.lesson-row-info{flex:1}
+.lesson-row-title{font-size:0.85rem;font-weight:500}
+.lesson-row-meta{font-size:0.72rem;color:var(--text3)}
+.lesson-row-actions{display:flex;gap:0.4rem}
+
+/* Manuscript tracker */
+.ms-steps{display:flex;gap:0;margin:1rem 0}
+.ms-step{flex:1;text-align:center;padding:0.75rem 0.5rem;border:1px solid var(--border);position:relative;cursor:pointer;transition:all 0.3s;font-size:0.78rem;color:var(--text3)}
+.ms-step:first-child{border-radius:8px 0 0 8px}
+.ms-step:last-child{border-radius:0 8px 8px 0}
+.ms-step.active{background:rgba(0,212,255,0.1);border-color:var(--k-cyan);color:var(--k-cyan);font-weight:600}
+.ms-step.done{background:var(--green-bg);border-color:rgba(74,222,128,0.3);color:var(--green)}
+
+/* Payment/Invoice rows */
+.inv-row{display:flex;justify-content:space-between;align-items:center;padding:0.7rem 0;border-bottom:1px solid var(--border);font-size:0.85rem}
+.inv-row:last-child{border-bottom:none}
+
+/* Notes textarea */
+.note-area{background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r);padding:1rem;color:var(--text);font-family:'Sora',sans-serif;font-size:0.85rem;width:100%;min-height:120px;resize:vertical;outline:none}
+.note-area:focus{border-color:var(--k-cyan)}
+
+/* Toast */
+.toast{position:fixed;bottom:2rem;right:2rem;z-index:9999;padding:0.8rem 1.4rem;border-radius:var(--r);font-size:0.85rem;font-weight:500;transform:translateY(100px);opacity:0;transition:all 0.4s;box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+.toast.vis{transform:translateY(0);opacity:1}
+.toast-ok{background:var(--green);color:var(--bg)}
+.toast-err{background:var(--k-red);color:white}
+
+/* Responsive */
+@media(max-width:768px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .fg-row{grid-template-columns:1fr}
+  .main{padding:1.5rem 1rem}
+}
+</style>
+</head>
+<body>
+
+<div class="layout" id="app" style="display:none;">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a class="side-logo" href="/">
+      <img src="/images/logo.jpg" alt="Kratos">
+      <span>Kratos Publisher</span>
+    </a>
+
+    <div class="side-user">
+      <div class="side-user-name" id="sideUserName">—</div>
+      <div class="side-user-email" id="sideUserEmail">—</div>
+      <div class="side-stage stage-idea" id="sideStage">Idea Stage</div>
+    </div>
+
+    <ul class="side-nav">
+      <li><a class="active" onclick="nav('dashboard')"><span class="icon">📊</span> Dashboard</a></li>
+      <li><a onclick="nav('courses')"><span class="icon">📖</span> My Courses</a></li>
+      <li><a onclick="nav('notes')"><span class="icon">📝</span> My Notes</a></li>
+      <li><a onclick="nav('bookmarks')"><span class="icon">🔖</span> Bookmarks</a></li>
+      <li><a onclick="nav('manuscript')"><span class="icon">✍️</span> Manuscript Tracker</a></li>
+      <li><a onclick="nav('community')"><span class="icon">💬</span> Community</a></li>
+    </ul>
+    <div class="side-div"></div>
+    <ul class="side-nav">
+      <li><a onclick="nav('profile')"><span class="icon">👤</span> Profile & Settings</a></li>
+      <li><a onclick="nav('billing')"><span class="icon">💳</span> Billing</a></li>
+      <li><a onclick="nav('security')"><span class="icon">🔒</span> Security & Privacy</a></li>
+    </ul>
+    <div class="side-div"></div>
+    <ul class="side-nav">
+      <li><a href="/" ><span class="icon">🌐</span> Course Site</a></li>
+      <li><a onclick="doSignOut()"><span class="icon">🚪</span> Sign Out</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="pg on" id="pg-dashboard">
+      <div class="pg-head"><h1>Welcome back, <span id="dashName">Student</span>!</h1></div>
+
+      <div class="stats">
+        <div class="stat"><div class="stat-val" style="color:var(--k-cyan)" id="dLessons">0</div><div class="stat-lbl">Lessons Done</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--k-orange)" id="dProgress">0%</div><div class="stat-lbl">Progress</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--green)" id="dBookmarks">0</div><div class="stat-lbl">Bookmarks</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--k-magenta)" id="dNotes">0</div><div class="stat-lbl">Notes</div></div>
+      </div>
+
+      <!-- Resume -->
+      <div class="card" id="resumeCard">
+        <h2>▶️ Resume Where You Left Off</h2>
+        <div id="resumeContent">Start your first lesson to track progress.</div>
+      </div>
+
+      <!-- Overall progress -->
+      <div class="card">
+        <h2>📈 Course Progress</h2>
+        <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--text2)">
+          <span>From Calling to Published Author</span>
+          <span id="dProgressText">0 of 18 lessons</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" id="dProgressBar" style="width:0%;background:linear-gradient(90deg,var(--k-cyan),var(--k-blue))"></div></div>
+        <div style="margin-top:1rem" id="moduleProgressList"></div>
+      </div>
+
+      <!-- Manuscript Stage -->
+      <div class="card">
+        <h2>✍️ My Manuscript Stage</h2>
+        <div class="ms-steps" id="dashMsSteps"></div>
+        <div style="margin-top:0.75rem;font-size:0.82rem;color:var(--text3)" id="dashDeadline"></div>
+      </div>
+
+      <!-- Prayer -->
+      <div class="card">
+        <h2>🙏 My Prayer Request</h2>
+        <p style="font-size:0.85rem;color:var(--text2);margin-bottom:0.75rem" id="dashPrayer">No prayer request set. Add one in your profile settings.</p>
+      </div>
+    </div>
+
+    <!-- ===== MY COURSES ===== -->
+    <div class="pg" id="pg-courses">
+      <div class="pg-head">
+        <h1>My Courses</h1>
+        <a href="/" class="btn btn-p">Go to Course →</a>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+          <div>
+            <h2 style="margin-bottom:0.25rem">📖 From Calling to Published Author</h2>
+            <div style="font-size:0.82rem;color:var(--text3)">Enrolled: <span id="cEnrolled">—</span> · 6 Modules · 18 Lessons</div>
+          </div>
+          <span class="badge" style="background:var(--green-bg);color:var(--green)">Active</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text2)">
+          <span id="cProgressLabel">0% complete</span>
+          <span id="cLessonsLabel">0/18 lessons</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" id="cProgressBar" style="width:0%;background:linear-gradient(90deg,var(--k-cyan),var(--k-blue))"></div></div>
+      </div>
+
+      <div class="card">
+        <h2>📋 Lesson Progress</h2>
+        <div id="lessonList"></div>
+      </div>
+
+      <div class="card">
+        <h2>📥 Downloadable Resources</h2>
+        <p style="font-size:0.85rem;color:var(--text3)">Resources will appear here as you progress through lessons.</p>
+      </div>
+    </div>
+
+    <!-- ===== NOTES ===== -->
+    <div class="pg" id="pg-notes">
+      <div class="pg-head"><h1>My Notes</h1></div>
+      <div id="notesList">
+        <div class="card"><p style="color:var(--text3);text-align:center;padding:2rem 0">No notes yet. Open a lesson and add notes while you study.</p></div>
+      </div>
+    </div>
+
+    <!-- ===== BOOKMARKS ===== -->
+    <div class="pg" id="pg-bookmarks">
+      <div class="pg-head"><h1>Bookmarks</h1></div>
+      <div id="bookmarksList">
+        <div class="card"><p style="color:var(--text3);text-align:center;padding:2rem 0">No bookmarks yet. Bookmark lessons you want to revisit.</p></div>
+      </div>
+    </div>
+
+    <!-- ===== MANUSCRIPT TRACKER ===== -->
+    <div class="pg" id="pg-manuscript">
+      <div class="pg-head"><h1>Manuscript Tracker</h1></div>
+      <div class="card">
+        <h2>📍 Current Stage</h2>
+        <div class="ms-steps" id="msSteps"></div>
+        <div class="fg" style="margin-top:1.5rem">
+          <label class="fl">Publishing Deadline</label>
+          <input class="fi" type="date" id="msDeadline" onchange="saveMsData()">
+        </div>
+        <div class="fg">
+          <label class="fl">Notes about your manuscript</label>
+          <textarea class="ft" id="msNotes" placeholder="Track your thoughts, ideas, and progress..." onblur="saveMsData()"></textarea>
+        </div>
+      </div>
+      <div class="card">
+        <h2>🙏 Prayer Request</h2>
+        <p style="font-size:0.85rem;color:var(--text2);margin-bottom:0.75rem">Share a prayer request related to your writing journey. This is private to you.</p>
+        <textarea class="ft" id="msPrayer" placeholder="Lord, guide me as I..." onblur="saveMsData()"></textarea>
+      </div>
+      <div class="card">
+        <h2>🎯 My Publishing Goal</h2>
+        <textarea class="ft" id="msGoal" placeholder="I want to publish my book by... because..." onblur="saveMsData()"></textarea>
+      </div>
+    </div>
+
+    <!-- ===== COMMUNITY ===== -->
+    <div class="pg" id="pg-community">
+      <div class="pg-head"><h1>Community</h1></div>
+      <div class="card">
+        <h2>💬 Discussion Board</h2>
+        <div style="margin-bottom:1rem">
+          <textarea class="ft" id="newPost" placeholder="Share something with fellow writers..."></textarea>
+          <button class="btn btn-p btn-sm" style="margin-top:0.5rem" onclick="postDiscussion()">Post</button>
+        </div>
+        <div id="discussionList">
+          <p style="color:var(--text3);text-align:center;padding:1rem 0">No discussions yet. Be the first to share!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PROFILE & SETTINGS ===== -->
+    <div class="pg" id="pg-profile">
+      <div class="pg-head"><h1>Profile & Settings</h1></div>
+
+      <div class="card">
+        <h2>👤 Basic Information</h2>
+        <div class="fg-row">
+          <div class="fg"><label class="fl">Full Name</label><input class="fi" id="pName"></div>
+          <div class="fg"><label class="fl">Username</label><input class="fi" id="pUsername" placeholder="@username"></div>
+        </div>
+        <div class="fg-row">
+          <div class="fg"><label class="fl">Email</label><input class="fi" id="pEmail" disabled></div>
+          <div class="fg"><label class="fl">Phone</label><input class="fi" id="pPhone" placeholder="+44..."></div>
+        </div>
+        <div class="fg-row">
+          <div class="fg"><label class="fl">Country</label><input class="fi" id="pCountry"></div>
+          <div class="fg"><label class="fl">Manuscript Stage</label>
+            <select class="fs" id="pStage">
+              <option value="idea">💡 Idea Stage</option>
+              <option value="writing">✍️ Writing</option>
+              <option value="editing">📝 Editing</option>
+              <option value="ready">🚀 Ready to Publish</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg"><label class="fl">Bio</label><textarea class="ft" id="pBio" placeholder="Tell us about yourself and your book..."></textarea></div>
+        <button class="btn btn-p" onclick="saveProfile()">Save Profile</button>
+      </div>
+
+      <div class="card">
+        <h2>🔔 Communication Preferences</h2>
+        <div class="fg">
+          <label class="toggle"><input type="checkbox" id="pNotifyEmail"><span class="toggle-track"></span> Email notifications for new lessons</label>
+        </div>
+        <div class="fg">
+          <label class="toggle"><input type="checkbox" id="pNotifySms"><span class="toggle-track"></span> SMS notifications</label>
+        </div>
+        <div class="fg">
+          <label class="toggle"><input type="checkbox" id="pMarketing"><span class="toggle-track"></span> Receive marketing emails & updates from Kratos Publisher</label>
+        </div>
+        <button class="btn btn-p btn-sm" onclick="saveProfile()">Save Preferences</button>
+      </div>
+    </div>
+
+    <!-- ===== BILLING ===== -->
+    <div class="pg" id="pg-billing">
+      <div class="pg-head"><h1>Billing & Payments</h1></div>
+      <div class="card">
+        <h2>💳 Subscription</h2>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:0.95rem;font-weight:600">From Calling to Published Author</div>
+            <div style="font-size:0.82rem;color:var(--text3)">Lifetime Access</div>
+          </div>
+          <span class="badge" style="background:var(--green-bg);color:var(--green)">Active</span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>🧾 Payment History</h2>
+        <div id="invoiceList">
+          <p style="color:var(--text3);font-size:0.85rem;text-align:center;padding:1rem 0">No payment records found.</p>
+        </div>
+      </div>
+      <div class="card">
+        <h2>📄 Policies</h2>
+        <p style="font-size:0.85rem;color:var(--text2)">For refund requests or billing questions, contact <a href="mailto:support@kratospublisher.co.uk">support@kratospublisher.co.uk</a></p>
+      </div>
+    </div>
+
+    <!-- ===== SECURITY ===== -->
+    <div class="pg" id="pg-security">
+      <div class="pg-head"><h1>Security & Privacy</h1></div>
+      <div class="card">
+        <h2>🔑 Change Password</h2>
+        <div class="fg"><label class="fl">New Password</label><input class="fi" type="password" id="secNewPw" minlength="6" placeholder="Minimum 6 characters"></div>
+        <div class="fg"><label class="fl">Confirm Password</label><input class="fi" type="password" id="secConfirmPw" placeholder="Repeat new password"></div>
+        <button class="btn btn-p" onclick="changePassword()">Update Password</button>
+      </div>
+      <div class="card">
+        <h2>🛡️ Two-Factor Authentication</h2>
+        <p style="font-size:0.85rem;color:var(--text2);margin-bottom:1rem">Add an extra layer of security to your account.</p>
+        <span class="badge" style="background:rgba(255,255,255,0.05);color:var(--text3)">Coming Soon</span>
+      </div>
+      <div class="card">
+        <h2>📋 Data & Privacy</h2>
+        <div style="display:flex;flex-direction:column;gap:0.75rem">
+          <button class="btn btn-s btn-sm" onclick="requestData()">📥 Request Data Download</button>
+          <button class="btn btn-d btn-sm" onclick="requestDelete()">🗑️ Request Account Deletion</button>
+          <a href="#" style="font-size:0.82rem" onclick="return false;">Read our Privacy Policy →</a>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Auth redirect -->
+<div id="authRedirect" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)">
+  <div style="text-align:center">
+    <img src="/images/logo.jpg" style="width:48px;border-radius:12px;margin-bottom:1rem">
+    <h2 style="font-family:'DM Serif Display',serif;margin-bottom:0.5rem">My Dashboard</h2>
+    <p style="color:var(--text2);margin-bottom:1.5rem;font-size:0.9rem">Sign in to access your dashboard</p>
+    <a href="/" class="btn btn-p" style="padding:0.75rem 2rem;font-size:0.9rem">Go to Course Site →</a>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://ywpdiapocrjzabnqixoq.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cGRpYXBvY3JqemFibnFpeG9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MTE1MDAsImV4cCI6MjA4NzQ4NzUwMH0.nlOpULiCGsXPzqcs9phd4MNccpxRCjDoxXoPReeIPNg';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+let user=null,profile=null,progress=[],bookmarks=[],notes=[];
+
+const LESSONS=[
+  {num:1,mod:1,title:"Is God Calling You to Write This Book?",dur:"25 min"},
+  {num:2,mod:1,title:"Defining Your Message & Audience",dur:"20 min"},
+  {num:3,mod:1,title:"Choosing the Right Type of Christian Book",dur:"30 min"},
+  {num:4,mod:2,title:"Writing with Excellence (Not Perfectionism)",dur:"30 min"},
+  {num:5,mod:2,title:"Editing Your Christian Book",dur:"25 min"},
+  {num:6,mod:2,title:"Beta Readers, Sensitivity & Theology Checks",dur:"20 min"},
+  {num:7,mod:3,title:"Traditional Christian Publishing",dur:"30 min"},
+  {num:8,mod:3,title:"Self-Publishing for Christian Authors",dur:"35 min"},
+  {num:9,mod:3,title:"Hybrid & Assisted Publishing",dur:"20 min"},
+  {num:10,mod:4,title:"ISBNs, Copyright, & Legal Basics",dur:"25 min"},
+  {num:11,mod:4,title:"Book Cover & Interior Design",dur:"30 min"},
+  {num:12,mod:4,title:"Pricing & Distribution",dur:"20 min"},
+  {num:13,mod:5,title:"Preparing for Launch",dur:"25 min"},
+  {num:14,mod:5,title:"Marketing Without Compromising Your Faith",dur:"35 min"},
+  {num:15,mod:5,title:"Launch Day & Beyond",dur:"20 min"},
+  {num:16,mod:6,title:"Using Your Book for Ministry",dur:"25 min"},
+  {num:17,mod:6,title:"Building an Author Platform God Can Use",dur:"30 min"},
+  {num:18,mod:6,title:"Next Steps After Your First Book",dur:"20 min"}
+];
+const MODS=["","The Calling & Clarity Stage","Preparing Your Manuscript","Understanding Publishing Options","The Business Side","Launching Your Christian Book","Long-Term Impact & Ministry Growth"];
+const STAGES={idea:"💡 Idea Stage",writing:"✍️ Writing",editing:"📝 Editing",ready:"🚀 Ready to Publish"};
+
+// Init
+async function init(){
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session){document.getElementById('authRedirect').style.display='flex';return}
+  user=session.user;
+  document.getElementById('authRedirect').style.display='none';
+  document.getElementById('app').style.display='grid';
+  await loadAll();
+  renderAll();
+}
+
+async function loadAll(){
+  const[p,pr,bk,nt]=await Promise.all([
+    sb.from('profiles').select('*').eq('id',user.id).single(),
+    sb.from('user_progress').select('*').eq('user_id',user.id),
+    sb.from('bookmarks').select('*').eq('user_id',user.id),
+    sb.from('user_notes').select('*').eq('user_id',user.id)
+  ]);
+  profile=p.data||{};
+  progress=pr.data||[];
+  bookmarks=bk.data||[];
+  notes=nt.data||[];
+}
+
+function renderAll(){
+  const name=profile.full_name||user.email.split('@')[0];
+  const completed=progress.filter(p=>p.completed).map(p=>p.lesson_num);
+  const pct=Math.round((completed.length/18)*100);
+  const stage=profile.manuscript_stage||'idea';
+
+  // Sidebar
+  document.getElementById('sideUserName').textContent=name;
+  document.getElementById('sideUserEmail').textContent=user.email;
+  const stEl=document.getElementById('sideStage');
+  stEl.textContent=STAGES[stage];
+  stEl.className='side-stage stage-'+stage;
+
+  // Dashboard
+  document.getElementById('dashName').textContent=name.split(' ')[0];
+  document.getElementById('dLessons').textContent=completed.length;
+  document.getElementById('dProgress').textContent=pct+'%';
+  document.getElementById('dBookmarks').textContent=bookmarks.length;
+  document.getElementById('dNotes').textContent=notes.length;
+  document.getElementById('dProgressText').textContent=completed.length+' of 18 lessons';
+  document.getElementById('dProgressBar').style.width=pct+'%';
+
+  // Resume card
+  const nextLesson=LESSONS.find(l=>!completed.includes(l.num));
+  if(nextLesson){
+    document.getElementById('resumeContent').innerHTML=`
+      <div style="display:flex;align-items:center;gap:1rem">
+        <div style="width:48px;height:48px;border-radius:12px;background:rgba(0,212,255,0.1);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">📖</div>
+        <div style="flex:1">
+          <div style="font-size:0.95rem;font-weight:600">Lesson ${nextLesson.num}: ${nextLesson.title}</div>
+          <div style="font-size:0.78rem;color:var(--text3)">Module ${nextLesson.mod} · ${nextLesson.dur}</div>
+        </div>
+        <a href="/" class="btn btn-p">Continue →</a>
+      </div>`;
+  }else if(completed.length===18){
+    document.getElementById('resumeContent').innerHTML='<p style="color:var(--green);font-size:0.95rem">🎉 Congratulations! You\'ve completed all lessons!</p>';
+  }
+
+  // Module progress
+  let mpHtml='';
+  for(let m=1;m<=6;m++){
+    const mLessons=LESSONS.filter(l=>l.mod===m);
+    const mDone=mLessons.filter(l=>completed.includes(l.num)).length;
+    const mPct=Math.round((mDone/mLessons.length)*100);
+    mpHtml+=`<div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+      <span style="font-size:0.78rem;color:var(--text3);min-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">M${m}: ${MODS[m]}</span>
+      <div class="prog-track" style="flex:1;height:4px"><div class="prog-fill" style="width:${mPct}%;background:var(--k-cyan)"></div></div>
+      <span style="font-size:0.72rem;color:var(--text3);min-width:30px">${mDone}/${mLessons.length}</span>
+    </div>`;
+  }
+  document.getElementById('moduleProgressList').innerHTML=mpHtml;
+
+  // Manuscript stage on dashboard
+  renderMsSteps('dashMsSteps',stage,true);
+  if(profile.publishing_deadline){
+    const dl=new Date(profile.publishing_deadline);
+    const days=Math.ceil((dl-new Date())/(1000*60*60*24));
+    document.getElementById('dashDeadline').textContent=`📅 Publishing deadline: ${dl.toLocaleDateString()} (${days>0?days+' days left':'Overdue!'})`;
+  }
+
+  // Prayer
+  if(profile.prayer_request)document.getElementById('dashPrayer').textContent=profile.prayer_request;
+
+  // Courses page
+  document.getElementById('cEnrolled').textContent=profile.enrollment_date?new Date(profile.enrollment_date).toLocaleDateString():'—';
+  document.getElementById('cProgressLabel').textContent=pct+'% complete';
+  document.getElementById('cLessonsLabel').textContent=completed.length+'/18 lessons';
+  document.getElementById('cProgressBar').style.width=pct+'%';
+
+  let llHtml='';
+  LESSONS.forEach(l=>{
+    const done=completed.includes(l.num);
+    const isCurrent=nextLesson&&l.num===nextLesson.num;
+    const bk=bookmarks.find(b=>b.lesson_num===l.num);
+    llHtml+=`<div class="lesson-row ${done?'done':''} ${isCurrent?'current':''}">
+      <div class="lesson-num-circle">${done?'✓':l.num}</div>
+      <div class="lesson-row-info">
+        <div class="lesson-row-title">${l.title}</div>
+        <div class="lesson-row-meta">Module ${l.mod} · ${l.dur}</div>
+      </div>
+      <div class="lesson-row-actions">
+        <button class="btn btn-sm ${bk?'btn-p':'btn-s'}" onclick="toggleBookmark(${l.num})" title="${bk?'Remove bookmark':'Bookmark'}">${bk?'🔖':'☆'}</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('lessonList').innerHTML=llHtml;
+
+  // Profile form
+  document.getElementById('pName').value=profile.full_name||'';
+  document.getElementById('pUsername').value=profile.username||'';
+  document.getElementById('pEmail').value=user.email;
+  document.getElementById('pPhone').value=profile.phone||'';
+  document.getElementById('pCountry').value=profile.country||'';
+  document.getElementById('pStage').value=stage;
+  document.getElementById('pBio').value=profile.bio||'';
+  document.getElementById('pNotifyEmail').checked=profile.notify_email!==false;
+  document.getElementById('pNotifySms').checked=profile.notify_sms||false;
+  document.getElementById('pMarketing').checked=profile.marketing_optin||false;
+
+  // Manuscript page
+  renderMsSteps('msSteps',stage,false);
+  document.getElementById('msDeadline').value=profile.publishing_deadline||'';
+  document.getElementById('msPrayer').value=profile.prayer_request||'';
+
+  // Notes
+  renderNotes();
+  renderBookmarks();
+  loadDiscussions();
+}
+
+function renderMsSteps(elId,stage,readonly){
+  const steps=['idea','writing','editing','ready'];
+  const labels=['💡 Idea','✍️ Writing','📝 Editing','🚀 Ready'];
+  const idx=steps.indexOf(stage);
+  document.getElementById(elId).innerHTML=steps.map((s,i)=>{
+    let cls=i<idx?'done':i===idx?'active':'';
+    return `<div class="ms-step ${cls}" ${!readonly?`onclick="setStage('${s}')"`:''}>${labels[i]}</div>`;
+  }).join('');
+}
+
+// Navigation
+function nav(page){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.getElementById('pg-'+page).classList.add('on');
+  document.querySelectorAll('.side-nav a').forEach(a=>a.classList.remove('active'));
+  if(event?.currentTarget)event.currentTarget.classList.add('active');
+  if(page==='notes')renderNotes();
+  if(page==='bookmarks')renderBookmarks();
+  if(page==='community')loadDiscussions();
+}
+
+// Save profile
+async function saveProfile(){
+  const updates={
+    full_name:document.getElementById('pName').value,
+    username:document.getElementById('pUsername').value||null,
+    phone:document.getElementById('pPhone').value||null,
+    country:document.getElementById('pCountry').value||null,
+    manuscript_stage:document.getElementById('pStage').value,
+    bio:document.getElementById('pBio').value||null,
+    notify_email:document.getElementById('pNotifyEmail').checked,
+    notify_sms:document.getElementById('pNotifySms').checked,
+    marketing_optin:document.getElementById('pMarketing').checked
+  };
+  const{error}=await sb.from('profiles').update(updates).eq('id',user.id);
+  if(error){toast('Error: '+error.message,'err');return}
+  profile={...profile,...updates};
+  renderAll();
+  toast('Profile saved!','ok');
+}
+
+// Manuscript data
+async function saveMsData(){
+  const updates={
+    publishing_deadline:document.getElementById('msDeadline').value||null,
+    prayer_request:document.getElementById('msPrayer').value||null
+  };
+  await sb.from('profiles').update(updates).eq('id',user.id);
+  profile={...profile,...updates};
+}
+
+async function setStage(stage){
+  await sb.from('profiles').update({manuscript_stage:stage}).eq('id',user.id);
+  profile.manuscript_stage=stage;
+  renderAll();
+  toast('Stage updated!','ok');
+}
+
+// Bookmarks
+async function toggleBookmark(num){
+  const existing=bookmarks.find(b=>b.lesson_num===num);
+  if(existing){
+    await sb.from('bookmarks').delete().eq('id',existing.id);
+    bookmarks=bookmarks.filter(b=>b.id!==existing.id);
+  }else{
+    const{data}=await sb.from('bookmarks').insert({user_id:user.id,lesson_num:num}).select().single();
+    if(data)bookmarks.push(data);
+  }
+  renderAll();
+}
+
+function renderBookmarks(){
+  if(!bookmarks.length){
+    document.getElementById('bookmarksList').innerHTML='<div class="card"><p style="color:var(--text3);text-align:center;padding:2rem 0">No bookmarks yet.</p></div>';
+    return;
+  }
+  let html='';
+  bookmarks.forEach(bk=>{
+    const l=LESSONS.find(x=>x.num===bk.lesson_num);
+    if(!l)return;
+    html+=`<div class="card" style="padding:1rem 1.5rem">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <div>📖</div>
+        <div style="flex:1"><div style="font-weight:600;font-size:0.88rem">Lesson ${l.num}: ${l.title}</div><div style="font-size:0.75rem;color:var(--text3)">Module ${l.mod} · ${l.dur}</div></div>
+        <button class="btn btn-sm btn-d" onclick="toggleBookmark(${l.num})">Remove</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('bookmarksList').innerHTML=html;
+}
+
+// Notes
+function renderNotes(){
+  if(!notes.length){
+    document.getElementById('notesList').innerHTML='<div class="card"><p style="color:var(--text3);text-align:center;padding:2rem 0">No notes yet.</p></div>';
+    return;
+  }
+  let html='';
+  notes.forEach(n=>{
+    const l=LESSONS.find(x=>x.num===n.lesson_num);
+    html+=`<div class="card">
+      <h3 style="margin-bottom:0.5rem">📝 ${l?'Lesson '+l.num+': '+l.title:'Lesson '+n.lesson_num}</h3>
+      <textarea class="note-area" onblur="saveNote(${n.lesson_num},this.value)">${n.content||''}</textarea>
+      <div style="font-size:0.72rem;color:var(--text3);margin-top:0.3rem">Last updated: ${new Date(n.updated_at).toLocaleString()}</div>
+    </div>`;
+  });
+  document.getElementById('notesList').innerHTML=html;
+}
+
+async function saveNote(num,content){
+  await sb.from('user_notes').upsert({user_id:user.id,lesson_num:num,content,updated_at:new Date().toISOString()},{onConflict:'user_id,lesson_num'});
+  const idx=notes.findIndex(n=>n.lesson_num===num);
+  if(idx>=0)notes[idx].content=content;
+  toast('Note saved','ok');
+}
+
+// Community
+async function loadDiscussions(){
+  try{
+    const{data}=await sb.from('discussions').select('*,profiles(full_name,email)').is('parent_id',null).order('created_at',{ascending:false}).limit(20);
+    if(!data?.length){document.getElementById('discussionList').innerHTML='<p style="color:var(--text3);text-align:center;padding:1rem 0">No discussions yet. Be the first to share!</p>';return}
+    document.getElementById('discussionList').innerHTML=data.map(d=>`
+      <div style="padding:1rem 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:0.4rem">
+          <span style="font-weight:600;font-size:0.85rem">${d.profiles?.full_name||'Anonymous'}</span>
+          <span style="font-size:0.72rem;color:var(--text3)">${new Date(d.created_at).toLocaleString()}</span>
+        </div>
+        <p style="font-size:0.88rem;color:var(--text2)">${d.content}</p>
+      </div>
+    `).join('');
+  }catch(e){console.error(e)}
+}
+
+async function postDiscussion(){
+  const content=document.getElementById('newPost').value.trim();
+  if(!content)return;
+  await sb.from('discussions').insert({user_id:user.id,content});
+  document.getElementById('newPost').value='';
+  loadDiscussions();
+  toast('Posted!','ok');
+}
+
+// Security
+async function changePassword(){
+  const pw=document.getElementById('secNewPw').value;
+  const confirm=document.getElementById('secConfirmPw').value;
+  if(pw.length<6){toast('Password must be at least 6 characters','err');return}
+  if(pw!==confirm){toast('Passwords do not match','err');return}
+  const{error}=await sb.auth.updateUser({password:pw});
+  if(error){toast('Error: '+error.message,'err');return}
+  document.getElementById('secNewPw').value='';
+  document.getElementById('secConfirmPw').value='';
+  toast('Password updated!','ok');
+}
+
+function requestData(){toast('Data download request sent. We\'ll email you within 48 hours.','ok')}
+function requestDelete(){if(confirm('Are you sure? This action cannot be undone.'))toast('Account deletion request sent. We\'ll process within 30 days.','ok')}
+
+// Sign out
+async function doSignOut(){
+  await sb.auth.signOut();
+  window.location.href='/';
+}
+
+// Toast
+function toast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast toast-'+type+' vis';
+  setTimeout(()=>t.classList.remove('vis'),3500);
+}
+
+init();
+</script>
+</body>
+</html>

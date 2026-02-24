@@ -834,7 +834,7 @@ body {
         <div class="hero-stat"><div class="hero-stat-num">18</div><div class="hero-stat-label">Lessons</div></div>
         <div class="hero-stat"><div class="hero-stat-num">∞</div><div class="hero-stat-label">Impact</div></div>
       </div>
-      <div class="hero-cta-group">
+      <div class="hero-cta-group" id="heroCtas">
         <a class="btn-cta btn-cta-primary" href="#" onclick="startCourse(); return false;">
           Begin Your Journey
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -1190,6 +1190,7 @@ async function signOut() {
 
 function updateAuthUI() {
   const container = document.getElementById('authContainer');
+  const heroCtas = document.getElementById('heroCtas');
   if (currentUser) {
     const name = userProfile?.full_name || currentUser.email?.split('@')[0] || 'User';
     const initial = name[0].toUpperCase();
@@ -1203,14 +1204,38 @@ function updateAuthUI() {
           <div style="font-size:0.88rem;font-weight:600;color:var(--text-primary);">${name}</div>
           <div style="font-size:0.75rem;color:var(--text-muted);">${currentUser.email}</div>
         </div>
+        <a href="/dashboard" style="display:block;padding:0.6rem 0.75rem;color:var(--text-secondary);text-decoration:none;font-size:0.82rem;border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">📊 My Dashboard</a>
         <a href="#" onclick="showProfileEditor(); return false;" style="display:block;padding:0.6rem 0.75rem;color:var(--text-secondary);text-decoration:none;font-size:0.82rem;border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">✏️ Edit Profile</a>
         <a href="#" onclick="signOut(); return false;" style="display:block;padding:0.6rem 0.75rem;color:var(--k-red);text-decoration:none;font-size:0.82rem;border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">🚪 Sign Out</a>
       </div>
     `;
+    // Update hero buttons when logged in
+    if (heroCtas) {
+      heroCtas.innerHTML = `
+        <a class="btn-cta btn-cta-primary" href="#" onclick="startCourse(); return false;">
+          Continue Learning
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a class="btn-cta btn-cta-secondary" href="/dashboard">
+          My Dashboard
+        </a>
+      `;
+    }
   } else {
     container.innerHTML = `
       <button class="btn-auth" onclick="openAuth()">Sign In</button>
     `;
+    if (heroCtas) {
+      heroCtas.innerHTML = `
+        <a class="btn-cta btn-cta-primary" href="#" onclick="startCourse(); return false;">
+          Begin Your Journey
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a class="btn-cta btn-cta-secondary" href="#" onclick="openAuth(); return false;">
+          Sign In to Save Progress
+        </a>
+      `;
+    }
   }
 }
 
