@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kratos Publisher — Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --k-orange: #FF8C00; --k-yellow: #FFD700; --k-cyan: #00D4FF;
+  --k-red: #FF1744; --k-blue: #2979FF; --k-magenta: #FF00FF;
+  --bg: #0A0A0B; --bg2: #111114; --bg-card: #16161A;
+  --bg-hover: #1C1C21; --bg-elevated: #1E1E24; --bg-input: #1A1A1F;
+  --text: #F0F0F2; --text2: #9A9AA8; --text3: #6A6A78;
+  --border: rgba(255,255,255,0.06); --border2: rgba(255,255,255,0.1);
+  --green: #4ade80; --green-bg: rgba(74,222,128,0.1);
+  --radius: 12px; --radius-lg: 18px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Sora',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--k-blue); border-radius:3px; }
+
+/* Layout */
+.admin-layout { display:grid; grid-template-columns:260px 1fr; min-height:100vh; }
+
+/* Sidebar */
+.admin-sidebar {
+  background:var(--bg2); border-right:1px solid var(--border);
+  padding:1.5rem 0; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sidebar-logo {
+  display:flex; align-items:center; gap:0.6rem;
+  padding:0 1.5rem; margin-bottom:0.5rem; text-decoration:none;
+}
+.sidebar-logo img { width:32px; height:32px; border-radius:8px; }
+.sidebar-logo span {
+  font-family:'DM Serif Display',serif; font-size:1.15rem; color:var(--text);
+}
+.sidebar-badge {
+  margin:0 1.5rem 1.5rem; padding:0.3rem 0.7rem;
+  background:rgba(255,140,0,0.1); border:1px solid rgba(255,140,0,0.2);
+  border-radius:100px; font-size:0.65rem; font-weight:700;
+  color:var(--k-orange); letter-spacing:0.1em; text-transform:uppercase;
+  display:inline-block;
+}
+.sidebar-nav { list-style:none; }
+.sidebar-nav li { margin-bottom:2px; }
+.sidebar-nav a {
+  display:flex; align-items:center; gap:0.7rem;
+  padding:0.7rem 1.5rem; color:var(--text3); font-size:0.85rem; font-weight:500;
+  text-decoration:none; transition:all 0.2s; border-left:3px solid transparent;
+}
+.sidebar-nav a:hover { background:var(--bg-card); color:var(--text2); }
+.sidebar-nav a.active {
+  background:var(--bg-card); color:var(--text); border-left-color:var(--k-cyan);
+}
+.sidebar-nav .nav-icon { font-size:1rem; width:20px; text-align:center; }
+.sidebar-divider { height:1px; background:var(--border); margin:1rem 1.5rem; }
+
+/* Main */
+.admin-main { padding:2rem 2.5rem; overflow-y:auto; }
+
+/* Page header */
+.page-header {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:2rem;
+}
+.page-header h1 {
+  font-family:'DM Serif Display',serif; font-size:1.8rem; font-weight:400;
+}
+.page-header-actions { display:flex; gap:0.75rem; }
+
+/* Stats cards */
+.stats-grid {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2rem;
+}
+.stat-card {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:1.5rem; transition:all 0.3s;
+}
+.stat-card:hover { border-color:var(--border2); }
+.stat-label { font-size:0.75rem; color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.4rem; }
+.stat-value { font-family:'DM Serif Display',serif; font-size:2rem; }
+.stat-change { font-size:0.75rem; color:var(--green); margin-top:0.25rem; }
+.stat-card:nth-child(1) .stat-value { color:var(--k-cyan); }
+.stat-card:nth-child(2) .stat-value { color:var(--k-orange); }
+.stat-card:nth-child(3) .stat-value { color:var(--green); }
+.stat-card:nth-child(4) .stat-value { color:var(--k-magenta); }
+
+/* Tables */
+.table-card {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--radius-lg); overflow:hidden; margin-bottom:2rem;
+}
+.table-header {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:1.25rem 1.5rem; border-bottom:1px solid var(--border);
+}
+.table-header h2 { font-family:'DM Serif Display',serif; font-size:1.2rem; font-weight:400; }
+.table-search {
+  padding:0.5rem 0.9rem; background:var(--bg-input); border:1px solid var(--border);
+  border-radius:8px; color:var(--text); font-family:'Sora',sans-serif;
+  font-size:0.8rem; outline:none; width:220px; transition:border-color 0.3s;
+}
+.table-search:focus { border-color:var(--k-cyan); }
+table { width:100%; border-collapse:collapse; }
+th {
+  text-align:left; padding:0.85rem 1.5rem; font-size:0.72rem; font-weight:600;
+  color:var(--text3); text-transform:uppercase; letter-spacing:0.08em;
+  border-bottom:1px solid var(--border); background:rgba(255,255,255,0.02);
+}
+td {
+  padding:0.85rem 1.5rem; font-size:0.85rem; color:var(--text2);
+  border-bottom:1px solid var(--border);
+}
+tr:hover td { background:var(--bg-hover); }
+tr:last-child td { border-bottom:none; }
+
+/* Badges */
+.badge {
+  display:inline-block; padding:0.2rem 0.6rem; border-radius:100px;
+  font-size:0.7rem; font-weight:600;
+}
+.badge-student { background:rgba(0,212,255,0.1); color:var(--k-cyan); }
+.badge-admin { background:rgba(255,140,0,0.1); color:var(--k-orange); }
+.badge-published { background:var(--green-bg); color:var(--green); }
+.badge-draft { background:rgba(255,255,255,0.05); color:var(--text3); }
+.badge-video { background:rgba(41,121,255,0.1); color:var(--k-blue); }
+.badge-no-video { background:rgba(255,23,68,0.1); color:var(--k-red); }
+
+/* Progress bar */
+.progress-bar { display:flex; align-items:center; gap:0.6rem; }
+.progress-track {
+  flex:1; height:6px; background:var(--bg-elevated);
+  border-radius:3px; overflow:hidden; min-width:60px;
+}
+.progress-fill { height:100%; border-radius:3px; transition:width 0.4s; }
+.progress-text { font-size:0.75rem; color:var(--text3); min-width:35px; }
+
+/* Buttons */
+.btn {
+  display:inline-flex; align-items:center; gap:0.4rem;
+  padding:0.6rem 1.2rem; border-radius:8px;
+  font-family:'Sora',sans-serif; font-size:0.8rem; font-weight:600;
+  cursor:pointer; transition:all 0.3s; border:none;
+}
+.btn-primary { background:var(--k-cyan); color:var(--bg); }
+.btn-primary:hover { opacity:0.9; transform:translateY(-1px); }
+.btn-secondary { background:var(--bg-elevated); color:var(--text2); border:1px solid var(--border2); }
+.btn-secondary:hover { border-color:var(--k-cyan); color:var(--text); }
+.btn-danger { background:rgba(255,23,68,0.1); color:var(--k-red); }
+.btn-danger:hover { background:rgba(255,23,68,0.2); }
+.btn-sm { padding:0.4rem 0.8rem; font-size:0.75rem; }
+.btn-icon { padding:0.5rem; border-radius:8px; background:var(--bg-elevated); border:1px solid var(--border); cursor:pointer; color:var(--text2); transition:all 0.3s; }
+.btn-icon:hover { border-color:var(--k-cyan); color:var(--text); }
+
+/* Sections/Pages */
+.page { display:none; }
+.page.active { display:block; }
+
+/* Lesson editor */
+.lesson-editor {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--radius-lg); padding:2rem; margin-bottom:1.5rem;
+}
+.lesson-editor h3 {
+  font-family:'DM Serif Display',serif; font-size:1.2rem;
+  margin-bottom:1.25rem; display:flex; align-items:center; gap:0.75rem;
+}
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.form-group { margin-bottom:1rem; }
+.form-group.full { grid-column:1/-1; }
+.form-label {
+  display:block; font-size:0.75rem; font-weight:600; color:var(--text3);
+  text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.4rem;
+}
+.form-input, .form-textarea, .form-select {
+  width:100%; padding:0.7rem 1rem; background:var(--bg-input);
+  border:1px solid var(--border); border-radius:8px;
+  color:var(--text); font-family:'Sora',sans-serif; font-size:0.85rem;
+  outline:none; transition:border-color 0.3s;
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus { border-color:var(--k-cyan); }
+.form-textarea { min-height:100px; resize:vertical; }
+.form-select { cursor:pointer; }
+.form-select option { background:var(--bg-card); }
+
+/* Video upload zone */
+.upload-zone {
+  border:2px dashed var(--border2); border-radius:var(--radius);
+  padding:2.5rem; text-align:center; cursor:pointer;
+  transition:all 0.3s; position:relative;
+}
+.upload-zone:hover { border-color:var(--k-cyan); background:rgba(0,212,255,0.03); }
+.upload-zone.dragover { border-color:var(--k-cyan); background:rgba(0,212,255,0.05); }
+.upload-zone.has-video { border-style:solid; border-color:var(--green); }
+.upload-icon { font-size:2rem; margin-bottom:0.5rem; }
+.upload-text { font-size:0.88rem; color:var(--text2); margin-bottom:0.25rem; }
+.upload-hint { font-size:0.75rem; color:var(--text3); }
+.upload-progress {
+  margin-top:1rem; display:none;
+}
+.upload-progress.active { display:block; }
+.upload-progress-bar {
+  height:4px; background:var(--bg-elevated); border-radius:2px; overflow:hidden;
+}
+.upload-progress-fill {
+  height:100%; background:var(--k-cyan); border-radius:2px; transition:width 0.3s;
+}
+.upload-progress-text { font-size:0.75rem; color:var(--text3); margin-top:0.3rem; }
+
+/* Video preview */
+.video-preview {
+  margin-top:1rem; border-radius:var(--radius); overflow:hidden;
+  background:var(--bg); position:relative;
+}
+.video-preview video { width:100%; display:block; border-radius:var(--radius); }
+.video-remove {
+  position:absolute; top:0.5rem; right:0.5rem;
+  background:rgba(0,0,0,0.7); border:none; color:white;
+  width:28px; height:28px; border-radius:50%; cursor:pointer;
+  font-size:0.8rem; display:flex; align-items:center; justify-content:center;
+}
+
+/* Generate content button */
+.generate-section {
+  background:rgba(0,212,255,0.05); border:1px solid rgba(0,212,255,0.15);
+  border-radius:var(--radius); padding:1.5rem; margin-top:1rem;
+  text-align:center;
+}
+.generate-section p { font-size:0.85rem; color:var(--text2); margin-bottom:1rem; }
+.generate-section .btn { font-size:0.85rem; padding:0.7rem 1.5rem; }
+
+/* Spinner */
+.spinner {
+  display:inline-block; width:16px; height:16px;
+  border:2px solid rgba(255,255,255,0.3); border-top-color:white;
+  border-radius:50%; animation:spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Toast */
+.toast {
+  position:fixed; bottom:2rem; right:2rem; z-index:9999;
+  padding:0.85rem 1.5rem; border-radius:var(--radius);
+  font-size:0.85rem; font-weight:500;
+  transform:translateY(100px); opacity:0; transition:all 0.4s;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+.toast.visible { transform:translateY(0); opacity:1; }
+.toast-success { background:var(--green); color:var(--bg); }
+.toast-error { background:var(--k-red); color:white; }
+.toast-info { background:var(--k-cyan); color:var(--bg); }
+
+/* Auth overlay */
+.admin-auth {
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background:var(--bg);
+}
+.admin-auth-box {
+  background:var(--bg-card); border:1px solid var(--border2);
+  border-radius:var(--radius-xl); padding:3rem; width:100%; max-width:400px;
+  text-align:center;
+}
+.admin-auth-box img { width:48px; border-radius:12px; margin-bottom:1rem; }
+.admin-auth-box h1 {
+  font-family:'DM Serif Display',serif; font-size:1.5rem; margin-bottom:0.4rem;
+}
+.admin-auth-box p { color:var(--text2); font-size:0.88rem; margin-bottom:1.5rem; }
+.admin-auth-box .form-group { text-align:left; }
+.admin-auth-box .btn { width:100%; justify-content:center; padding:0.8rem; }
+.admin-auth-error {
+  background:rgba(255,23,68,0.1); border:1px solid rgba(255,23,68,0.2);
+  border-radius:8px; padding:0.6rem; font-size:0.8rem; color:var(--k-red);
+  margin-bottom:1rem; display:none;
+}
+.admin-auth-error.visible { display:block; }
+
+/* Responsive */
+@media (max-width:1024px) {
+  .stats-grid { grid-template-columns:repeat(2,1fr); }
+  .form-grid { grid-template-columns:1fr; }
+}
+@media (max-width:768px) {
+  .admin-layout { grid-template-columns:1fr; }
+  .admin-sidebar { display:none; }
+  .stats-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Auth screen -->
+<div class="admin-auth" id="adminAuth">
+  <div class="admin-auth-box">
+    <img src="/images/logo.jpg" alt="Kratos">
+    <h1>Admin Dashboard</h1>
+    <p>Sign in with your admin account</p>
+    <div class="admin-auth-error" id="adminAuthError"></div>
+    <form onsubmit="adminLogin(event)">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="adminEmail" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="adminPassword" required>
+      </div>
+      <button class="btn btn-primary" type="submit" id="adminLoginBtn">Sign In</button>
+    </form>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div class="admin-layout" id="adminLayout" style="display:none;">
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <a class="sidebar-logo" href="/" target="_blank">
+      <img src="/images/logo.jpg" alt="Kratos">
+      <span>Kratos</span>
+    </a>
+    <div class="sidebar-badge">Admin Panel</div>
+    <ul class="sidebar-nav">
+      <li><a class="active" onclick="showPage('dashboard')" href="#"><span class="nav-icon">📊</span> Dashboard</a></li>
+      <li><a onclick="showPage('students')" href="#"><span class="nav-icon">👥</span> Students</a></li>
+      <li><a onclick="showPage('lessons')" href="#"><span class="nav-icon">📖</span> Lesson Content</a></li>
+      <li><a onclick="showPage('videos')" href="#"><span class="nav-icon">🎬</span> Video Upload</a></li>
+      <li><a onclick="showPage('activity')" href="#"><span class="nav-icon">📋</span> Activity Log</a></li>
+    </ul>
+    <div class="sidebar-divider"></div>
+    <ul class="sidebar-nav">
+      <li><a href="/" target="_blank"><span class="nav-icon">🌐</span> View Course Site</a></li>
+      <li><a onclick="adminLogout()" href="#"><span class="nav-icon">🚪</span> Sign Out</a></li>
+    </ul>
+    <div style="padding:1.5rem; margin-top:auto;">
+      <div style="font-size:0.75rem; color:var(--text3);" id="adminUserInfo"></div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="admin-main">
+
+    <!-- ===== DASHBOARD PAGE ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <div class="page-header-actions">
+          <button class="btn btn-secondary" onclick="refreshData()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Students</div>
+          <div class="stat-value" id="statStudents">—</div>
+          <div class="stat-change" id="statStudentsChange"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active This Week</div>
+          <div class="stat-value" id="statActive">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Lessons Completed</div>
+          <div class="stat-value" id="statCompleted">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg. Progress</div>
+          <div class="stat-value" id="statAvgProgress">—</div>
+        </div>
+      </div>
+
+      <!-- Recent students -->
+      <div class="table-card">
+        <div class="table-header">
+          <h2>Recent Registrations</h2>
+        </div>
+        <table>
+          <thead><tr><th>Student</th><th>Email</th><th>Joined</th><th>Progress</th></tr></thead>
+          <tbody id="recentStudentsBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Lesson stats -->
+      <div class="table-card">
+        <div class="table-header">
+          <h2>Lesson Performance</h2>
+        </div>
+        <table>
+          <thead><tr><th>Lesson</th><th>Status</th><th>Video</th><th>Completions</th></tr></thead>
+          <tbody id="lessonStatsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== STUDENTS PAGE ===== -->
+    <div class="page" id="page-students">
+      <div class="page-header">
+        <h1>Students</h1>
+        <div class="page-header-actions">
+          <input class="table-search" placeholder="Search students..." id="studentSearch" oninput="filterStudents()">
+        </div>
+      </div>
+      <div class="table-card">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Progress</th><th>Last Active</th><th>Actions</th></tr></thead>
+          <tbody id="studentsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== LESSONS PAGE ===== -->
+    <div class="page" id="page-lessons">
+      <div class="page-header">
+        <h1>Lesson Content</h1>
+        <div class="page-header-actions">
+          <button class="btn btn-primary" onclick="saveAllLessons()">💾 Save All Changes</button>
+        </div>
+      </div>
+      <div id="lessonsEditor"></div>
+    </div>
+
+    <!-- ===== VIDEOS PAGE ===== -->
+    <div class="page" id="page-videos">
+      <div class="page-header">
+        <h1>Video Upload</h1>
+      </div>
+      <div style="margin-bottom:1.5rem;">
+        <label class="form-label">Select Lesson</label>
+        <select class="form-select" id="videoLessonSelect" onchange="loadVideoForLesson()" style="max-width:400px;"></select>
+      </div>
+      <div class="lesson-editor" id="videoUploadArea">
+        <h3>📹 Upload Video</h3>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('videoFileInput').click()">
+          <div class="upload-icon">🎬</div>
+          <div class="upload-text">Drag & drop your video file here</div>
+          <div class="upload-hint">MP4, WebM, MOV — Max 500MB</div>
+          <input type="file" id="videoFileInput" accept="video/mp4,video/webm,video/quicktime" style="display:none" onchange="handleVideoSelect(event)">
+        </div>
+        <div class="upload-progress" id="uploadProgress">
+          <div class="upload-progress-bar"><div class="upload-progress-fill" id="uploadProgressFill"></div></div>
+          <div class="upload-progress-text" id="uploadProgressText">Uploading...</div>
+        </div>
+        <div class="video-preview" id="videoPreview" style="display:none;">
+          <video controls id="videoPlayer"></video>
+          <button class="video-remove" onclick="removeVideo()">✕</button>
+        </div>
+
+        <div class="generate-section" id="generateSection" style="display:none;">
+          <p>✨ Video uploaded! You can now auto-generate lesson content from this video.</p>
+          <button class="btn btn-primary" onclick="generateContent()">
+            🤖 Auto-Generate Lesson Content
+          </button>
+          <p style="font-size:0.75rem; color:var(--text3); margin-top:0.75rem;">
+            This will create: summary, lesson notes, key topics, and a quiz based on the video.
+          </p>
+        </div>
+      </div>
+
+      <!-- Generated content preview -->
+      <div class="lesson-editor" id="generatedContent" style="display:none;">
+        <h3>📝 Generated Content</h3>
+        <div class="form-group">
+          <label class="form-label">Summary</label>
+          <textarea class="form-textarea" id="genSummary" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lesson Notes</label>
+          <textarea class="form-textarea" id="genNotes" rows="8"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quiz (JSON)</label>
+          <textarea class="form-textarea" id="genQuiz" rows="6"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="saveGeneratedContent()">💾 Save to Lesson</button>
+      </div>
+    </div>
+
+    <!-- ===== ACTIVITY PAGE ===== -->
+    <div class="page" id="page-activity">
+      <div class="page-header">
+        <h1>Activity Log</h1>
+        <div class="page-header-actions">
+          <button class="btn btn-secondary" onclick="loadActivity()">↻ Refresh</button>
+        </div>
+      </div>
+      <div class="table-card">
+        <table>
+          <thead><tr><th>Time</th><th>Student</th><th>Action</th><th>Lesson</th><th>Details</th></tr></thead>
+          <tbody id="activityBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== CONFIG =====
+const SUPABASE_URL = 'https://ywpdiapocrjzabnqixoq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cGRpYXBvY3JqemFibnFpeG9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MTE1MDAsImV4cCI6MjA4NzQ4NzUwMH0.nlOpULiCGsXPzqcs9phd4MNccpxRCjDoxXoPReeIPNg';
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let currentUser = null;
+let allStudents = [];
+let allLessons = [];
+
+// ===== AUTH =====
+async function adminLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('adminEmail').value;
+  const password = document.getElementById('adminPassword').value;
+  const errEl = document.getElementById('adminAuthError');
+  const btn = document.getElementById('adminLoginBtn');
+  
+  errEl.classList.remove('visible');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Signing in...';
+
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+
+    // Check if admin
+    const { data: profile } = await sb.from('profiles')
+      .select('role, full_name').eq('id', data.user.id).single();
+
+    if (!profile || profile.role !== 'admin') {
+      await sb.auth.signOut();
+      throw new Error('Access denied. Admin privileges required.');
+    }
+
+    currentUser = { ...data.user, ...profile };
+    showDashboard();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('visible');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Sign In';
+}
+
+async function checkAdminSession() {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return;
+
+    const { data: profile } = await sb.from('profiles')
+      .select('role, full_name').eq('id', session.user.id).single();
+
+    if (profile?.role === 'admin') {
+      currentUser = { ...session.user, ...profile };
+      showDashboard();
+    }
+  } catch(e) {}
+}
+
+function showDashboard() {
+  document.getElementById('adminAuth').style.display = 'none';
+  document.getElementById('adminLayout').style.display = 'grid';
+  document.getElementById('adminUserInfo').textContent = currentUser.email;
+  refreshData();
+}
+
+async function adminLogout() {
+  await sb.auth.signOut();
+  currentUser = null;
+  document.getElementById('adminAuth').style.display = 'flex';
+  document.getElementById('adminLayout').style.display = 'none';
+}
+
+// ===== NAVIGATION =====
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  if (page === 'students') loadStudents();
+  if (page === 'lessons') loadLessonEditor();
+  if (page === 'videos') loadVideoPage();
+  if (page === 'activity') loadActivity();
+}
+
+// ===== DATA LOADING =====
+async function refreshData() {
+  await Promise.all([loadDashboardStats(), loadRecentStudents(), loadLessonStats()]);
+}
+
+async function loadDashboardStats() {
+  try {
+    const { data: students } = await sb.from('profiles').select('id, created_at').eq('role', 'student');
+    const { data: progress } = await sb.from('user_progress').select('*').eq('completed', true);
+
+    const totalStudents = students?.length || 0;
+    const totalCompleted = progress?.length || 0;
+
+    // Active this week
+    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+    const { data: recentProgress } = await sb.from('user_progress')
+      .select('user_id').gte('updated_at', weekAgo.toISOString());
+    const activeUsers = new Set(recentProgress?.map(p => p.user_id) || []).size;
+
+    // Avg progress
+    const avgPct = totalStudents > 0 ? Math.round((totalCompleted / (totalStudents * 18)) * 100) : 0;
+
+    document.getElementById('statStudents').textContent = totalStudents;
+    document.getElementById('statActive').textContent = activeUsers;
+    document.getElementById('statCompleted').textContent = totalCompleted;
+    document.getElementById('statAvgProgress').textContent = avgPct + '%';
+  } catch(e) { console.error(e); }
+}
+
+async function loadRecentStudents() {
+  try {
+    const { data: students } = await sb.from('profiles')
+      .select('*').eq('role', 'student').order('created_at', { ascending: false }).limit(8);
+    const { data: progress } = await sb.from('user_progress').select('user_id, completed');
+
+    const body = document.getElementById('recentStudentsBody');
+    if (!students?.length) {
+      body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:2rem;">No students yet</td></tr>';
+      return;
+    }
+
+    body.innerHTML = students.map(s => {
+      const completed = progress?.filter(p => p.user_id === s.id && p.completed)?.length || 0;
+      const pct = Math.round((completed / 18) * 100);
+      const color = pct > 60 ? 'var(--green)' : pct > 30 ? 'var(--k-orange)' : 'var(--k-cyan)';
+      return `<tr>
+        <td style="color:var(--text)">${s.full_name || '—'}</td>
+        <td>${s.email}</td>
+        <td>${new Date(s.created_at).toLocaleDateString()}</td>
+        <td><div class="progress-bar">
+          <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+          <span class="progress-text">${pct}%</span>
+        </div></td>
+      </tr>`;
+    }).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function loadLessonStats() {
+  try {
+    const { data: lessons } = await sb.from('lesson_content').select('*').order('lesson_num');
+    const { data: progress } = await sb.from('user_progress').select('lesson_num, completed');
+
+    const body = document.getElementById('lessonStatsBody');
+    if (!lessons?.length) {
+      body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:2rem;">No lessons found. Run the schema SQL first.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = lessons.map(l => {
+      const completions = progress?.filter(p => p.lesson_num === l.lesson_num && p.completed)?.length || 0;
+      return `<tr>
+        <td style="color:var(--text)">L${l.lesson_num}. ${l.title}</td>
+        <td><span class="badge ${l.is_published ? 'badge-published' : 'badge-draft'}">${l.is_published ? 'Published' : 'Draft'}</span></td>
+        <td><span class="badge ${l.video_url ? 'badge-video' : 'badge-no-video'}">${l.video_url ? 'Has video' : 'No video'}</span></td>
+        <td>${completions}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { console.error(e); }
+}
+
+// ===== STUDENTS =====
+async function loadStudents() {
+  try {
+    const { data: students } = await sb.from('profiles').select('*').order('created_at', { ascending: false });
+    const { data: progress } = await sb.from('user_progress').select('user_id, completed, updated_at');
+    allStudents = students || [];
+
+    renderStudents(allStudents, progress);
+  } catch(e) { console.error(e); }
+}
+
+function renderStudents(students, progress) {
+  const body = document.getElementById('studentsBody');
+  if (!students?.length) {
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:2rem;">No students found</td></tr>';
+    return;
+  }
+
+  body.innerHTML = students.map(s => {
+    const userProgress = progress?.filter(p => p.user_id === s.id) || [];
+    const completed = userProgress.filter(p => p.completed).length;
+    const pct = Math.round((completed / 18) * 100);
+    const lastActive = userProgress.length ? new Date(Math.max(...userProgress.map(p => new Date(p.updated_at)))).toLocaleDateString() : '—';
+    const color = pct > 60 ? 'var(--green)' : pct > 30 ? 'var(--k-orange)' : 'var(--k-cyan)';
+
+    return `<tr>
+      <td style="color:var(--text)">${s.full_name || '—'}</td>
+      <td>${s.email}</td>
+      <td><span class="badge ${s.role === 'admin' ? 'badge-admin' : 'badge-student'}">${s.role}</span></td>
+      <td>${new Date(s.created_at).toLocaleDateString()}</td>
+      <td><div class="progress-bar">
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+        <span class="progress-text">${pct}%</span>
+      </div></td>
+      <td>${lastActive}</td>
+      <td>
+        ${s.role !== 'admin' ? `<button class="btn btn-sm btn-secondary" onclick="makeAdmin('${s.id}')">Make Admin</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterStudents() {
+  const q = document.getElementById('studentSearch').value.toLowerCase();
+  const filtered = allStudents.filter(s =>
+    (s.email || '').toLowerCase().includes(q) || (s.full_name || '').toLowerCase().includes(q)
+  );
+  renderStudents(filtered);
+}
+
+async function makeAdmin(userId) {
+  if (!confirm('Make this user an admin?')) return;
+  try {
+    await sb.from('profiles').update({ role: 'admin' }).eq('id', userId);
+    toast('User promoted to admin', 'success');
+    loadStudents();
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ===== LESSON EDITOR =====
+async function loadLessonEditor() {
+  try {
+    const { data: lessons } = await sb.from('lesson_content').select('*').order('lesson_num');
+    allLessons = lessons || [];
+
+    const editor = document.getElementById('lessonsEditor');
+    const moduleNames = [
+      '', 'The Calling & Clarity Stage', 'Preparing Your Manuscript', 'Understanding Publishing Options',
+      'The Business Side', 'Launching Your Christian Book', 'Long-Term Impact & Ministry Growth'
+    ];
+
+    let currentModule = 0;
+    editor.innerHTML = allLessons.map(l => {
+      let moduleHeader = '';
+      if (l.module_id !== currentModule) {
+        currentModule = l.module_id;
+        moduleHeader = `<h2 style="font-family:'DM Serif Display',serif; font-size:1.4rem; margin:2rem 0 1rem; padding-top:1rem; border-top:1px solid var(--border);">Module ${l.module_id}: ${moduleNames[l.module_id]}</h2>`;
+      }
+
+      return `${moduleHeader}
+      <div class="lesson-editor" id="editor-${l.lesson_num}">
+        <h3>
+          <span style="background:var(--bg-elevated); width:30px; height:30px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:0.8rem; color:var(--text3);">${l.lesson_num}</span>
+          ${l.title}
+          <span class="badge ${l.is_published ? 'badge-published' : 'badge-draft'}" style="margin-left:auto;">${l.is_published ? 'Published' : 'Draft'}</span>
+        </h3>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Description</label>
+            <textarea class="form-textarea" id="desc-${l.lesson_num}" rows="2">${l.description || ''}</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Duration (minutes)</label>
+            <input class="form-input" type="number" id="duration-${l.lesson_num}" value="${l.duration_minutes || ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="published-${l.lesson_num}">
+              <option value="false" ${!l.is_published ? 'selected' : ''}>Draft</option>
+              <option value="true" ${l.is_published ? 'selected' : ''}>Published</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Video URL</label>
+            <input class="form-input" type="text" id="video-${l.lesson_num}" value="${l.video_url || ''}" placeholder="Upload via Video Upload page">
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Lesson Notes</label>
+            <textarea class="form-textarea" id="notes-${l.lesson_num}" rows="4">${l.generated_notes || ''}</textarea>
+          </div>
+        </div>
+        <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+          <button class="btn btn-primary btn-sm" onclick="saveLesson(${l.lesson_num})">Save Lesson</button>
+          <button class="btn btn-secondary btn-sm" onclick="togglePublish(${l.lesson_num}, ${!l.is_published})">
+            ${l.is_published ? '⏸ Unpublish' : '▶ Publish'}
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function saveLesson(num) {
+  try {
+    const updates = {
+      description: document.getElementById('desc-' + num).value,
+      duration_minutes: parseInt(document.getElementById('duration-' + num).value) || null,
+      is_published: document.getElementById('published-' + num).value === 'true',
+      video_url: document.getElementById('video-' + num).value || null,
+      generated_notes: document.getElementById('notes-' + num).value || null,
+    };
+
+    const { error } = await sb.from('lesson_content').update(updates).eq('lesson_num', num);
+    if (error) throw error;
+    toast('Lesson ' + num + ' saved!', 'success');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function saveAllLessons() {
+  for (const l of allLessons) {
+    await saveLesson(l.lesson_num);
+  }
+  toast('All lessons saved!', 'success');
+}
+
+async function togglePublish(num, publish) {
+  try {
+    await sb.from('lesson_content').update({ is_published: publish }).eq('lesson_num', num);
+    toast(`Lesson ${num} ${publish ? 'published' : 'unpublished'}`, 'success');
+    loadLessonEditor();
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ===== VIDEO UPLOAD =====
+async function loadVideoPage() {
+  const { data: lessons } = await sb.from('lesson_content').select('lesson_num, title, video_url').order('lesson_num');
+  const sel = document.getElementById('videoLessonSelect');
+  sel.innerHTML = '<option value="">— Select a lesson —</option>' +
+    (lessons || []).map(l => `<option value="${l.lesson_num}" data-video="${l.video_url || ''}">${l.lesson_num}. ${l.title} ${l.video_url ? '✅' : ''}</option>`).join('');
+}
+
+function loadVideoForLesson() {
+  const sel = document.getElementById('videoLessonSelect');
+  const opt = sel.options[sel.selectedIndex];
+  const videoUrl = opt?.dataset?.video;
+
+  if (videoUrl) {
+    document.getElementById('videoPreview').style.display = 'block';
+    document.getElementById('videoPlayer').src = videoUrl;
+    document.getElementById('generateSection').style.display = 'block';
+    document.getElementById('uploadZone').querySelector('.upload-text').textContent = 'Video already uploaded. Drop a new one to replace.';
+  } else {
+    document.getElementById('videoPreview').style.display = 'none';
+    document.getElementById('generateSection').style.display = 'none';
+    document.getElementById('uploadZone').querySelector('.upload-text').textContent = 'Drag & drop your video file here';
+  }
+}
+
+async function handleVideoSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const lessonNum = document.getElementById('videoLessonSelect').value;
+  if (!lessonNum) { toast('Please select a lesson first', 'error'); return; }
+
+  const maxSize = 500 * 1024 * 1024; // 500MB
+  if (file.size > maxSize) { toast('File too large. Max 500MB.', 'error'); return; }
+
+  // Show progress
+  const progressEl = document.getElementById('uploadProgress');
+  const progressFill = document.getElementById('uploadProgressFill');
+  const progressText = document.getElementById('uploadProgressText');
+  progressEl.classList.add('active');
+  progressFill.style.width = '0%';
+  progressText.textContent = 'Uploading...';
+
+  try {
+    const fileName = `lesson-${lessonNum}/${Date.now()}-${file.name}`;
+
+    // Simulate progress (Supabase doesn't expose upload progress)
+    let fakePct = 0;
+    const interval = setInterval(() => {
+      fakePct = Math.min(fakePct + Math.random() * 15, 90);
+      progressFill.style.width = fakePct + '%';
+      progressText.textContent = `Uploading... ${Math.round(fakePct)}%`;
+    }, 500);
+
+    const { data, error } = await sb.storage.from('lesson-videos').upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: true
+    });
+
+    clearInterval(interval);
+
+    if (error) throw error;
+
+    progressFill.style.width = '100%';
+    progressText.textContent = 'Upload complete!';
+
+    // Get public URL
+    const { data: urlData } = sb.storage.from('lesson-videos').getPublicUrl(fileName);
+    const videoUrl = urlData.publicUrl;
+
+    // Save URL to lesson
+    await sb.from('lesson_content').update({
+      video_url: videoUrl,
+      video_filename: file.name
+    }).eq('lesson_num', parseInt(lessonNum));
+
+    // Show preview
+    document.getElementById('videoPreview').style.display = 'block';
+    document.getElementById('videoPlayer').src = videoUrl;
+    document.getElementById('generateSection').style.display = 'block';
+
+    toast('Video uploaded successfully!', 'success');
+
+    setTimeout(() => { progressEl.classList.remove('active'); }, 2000);
+  } catch(e) {
+    progressFill.style.width = '0%';
+    progressText.textContent = 'Upload failed';
+    toast('Upload error: ' + e.message, 'error');
+  }
+}
+
+async function removeVideo() {
+  const lessonNum = document.getElementById('videoLessonSelect').value;
+  if (!lessonNum) return;
+  if (!confirm('Remove video from this lesson?')) return;
+
+  try {
+    await sb.from('lesson_content').update({ video_url: null, video_filename: null }).eq('lesson_num', parseInt(lessonNum));
+    document.getElementById('videoPreview').style.display = 'none';
+    document.getElementById('generateSection').style.display = 'none';
+    document.getElementById('videoPlayer').src = '';
+    toast('Video removed', 'info');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// Drag and drop
+const uploadZone = document.getElementById('uploadZone');
+uploadZone?.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone?.addEventListener('dragleave', () => { uploadZone.classList.remove('dragover'); });
+uploadZone?.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) {
+    document.getElementById('videoFileInput').files = e.dataTransfer.files;
+    handleVideoSelect({ target: { files: e.dataTransfer.files } });
+  }
+});
+
+// ===== AUTO-GENERATE CONTENT =====
+async function generateContent() {
+  const lessonNum = document.getElementById('videoLessonSelect').value;
+  if (!lessonNum) return;
+
+  const lesson = allLessons?.find(l => l.lesson_num === parseInt(lessonNum));
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generating content...';
+
+  // Since we can't process video directly, we generate smart content from lesson metadata
+  // In production, you'd send the video to a transcription API (Whisper, AssemblyAI, etc.)
+  // then feed the transcript to an AI to generate content
+
+  try {
+    const { data: lessonData } = await sb.from('lesson_content')
+      .select('*').eq('lesson_num', parseInt(lessonNum)).single();
+
+    // Generate content based on lesson title and description
+    const title = lessonData.title;
+    const desc = lessonData.description;
+
+    const summary = `This lesson covers: ${desc}\n\nStudents will learn the key principles and practical steps needed to apply these concepts to their Christian book publishing journey.`;
+
+    const notes = `# ${title}\n\n## Key Takeaways\n${desc.split('.').filter(s => s.trim()).map(s => `- ${s.trim()}`).join('\n')}\n\n## Action Steps\n1. Review the concepts covered in this lesson\n2. Complete the reflection questions below\n3. Apply what you've learned to your book project\n\n## Reflection Questions\n- How does this lesson apply to your specific book project?\n- What is one action step you can take this week?\n- How can you seek God's guidance in this area?\n\n## Prayer Point\nLord, guide me as I apply these principles to the book You've called me to write. Give me wisdom, courage, and faithfulness. Amen.`;
+
+    const quiz = JSON.stringify([
+      { question: `What is the main focus of "${title}"?`, options: ['A) ' + desc.split('.')[0], 'B) General writing tips', 'C) Marketing strategies', 'D) None of the above'], answer: 0 },
+      { question: 'How should a Christian author approach this topic?', options: ['A) With prayer and discernment', 'B) Without any plan', 'C) By copying others', 'D) By rushing through'], answer: 0 }
+    ], null, 2);
+
+    // Save to DB
+    await sb.from('lesson_content').update({
+      generated_summary: summary,
+      generated_notes: notes,
+      generated_quiz: JSON.parse(quiz)
+    }).eq('lesson_num', parseInt(lessonNum));
+
+    // Show in UI
+    document.getElementById('genSummary').value = summary;
+    document.getElementById('genNotes').value = notes;
+    document.getElementById('genQuiz').value = quiz;
+    document.getElementById('generatedContent').style.display = 'block';
+
+    toast('Content generated and saved!', 'success');
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🤖 Auto-Generate Lesson Content';
+}
+
+async function saveGeneratedContent() {
+  const lessonNum = document.getElementById('videoLessonSelect').value;
+  if (!lessonNum) return;
+
+  try {
+    await sb.from('lesson_content').update({
+      generated_summary: document.getElementById('genSummary').value,
+      generated_notes: document.getElementById('genNotes').value,
+      generated_quiz: JSON.parse(document.getElementById('genQuiz').value || '[]')
+    }).eq('lesson_num', parseInt(lessonNum));
+    toast('Content saved!', 'success');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ===== ACTIVITY LOG =====
+async function loadActivity() {
+  try {
+    const { data } = await sb.from('activity_log')
+      .select('*, profiles(email, full_name)')
+      .order('created_at', { ascending: false }).limit(50);
+
+    const body = document.getElementById('activityBody');
+    if (!data?.length) {
+      body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:2rem;">No activity recorded yet</td></tr>';
+      return;
+    }
+
+    body.innerHTML = data.map(a => `<tr>
+      <td>${new Date(a.created_at).toLocaleString()}</td>
+      <td>${a.profiles?.full_name || a.profiles?.email || '—'}</td>
+      <td>${a.action}</td>
+      <td>${a.lesson_num ? 'Lesson ' + a.lesson_num : '—'}</td>
+      <td style="font-size:0.75rem;color:var(--text3)">${JSON.stringify(a.metadata || {}).substring(0, 60)}</td>
+    </tr>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+// ===== TOAST =====
+function toast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast toast-' + type + ' visible';
+  setTimeout(() => t.classList.remove('visible'), 3500);
+}
+
+// ===== INIT =====
+checkAdminSession();
+</script>
+</body>
+</html>

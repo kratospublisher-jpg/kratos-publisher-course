@@ -1030,13 +1030,22 @@ function saveProgress() {
   try {
     localStorage.setItem('kratos_progress', JSON.stringify([...completedLessons]));
   } catch(e) {}
-  // Also save to Supabase if logged in
+  // Save to Supabase if logged in (per-lesson tracking)
   if (supabase && currentUser) {
-    supabase.from('user_progress').upsert({
+    completedLessons.forEach(lessonNum => {
+      supabase.from('user_progress').upsert({
+        user_id: currentUser.id,
+        lesson_num: lessonNum,
+        completed: true,
+        completed_at: new Date().toISOString()
+      }, { onConflict: 'user_id,lesson_num' }).then(() => {});
+    });
+    // Log activity
+    supabase.from('activity_log').insert({
       user_id: currentUser.id,
-      completed_lessons: [...completedLessons],
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id' }).then(() => {});
+      action: 'progress_updated',
+      metadata: { completed: [...completedLessons] }
+    }).then(() => {});
   }
 }
 
@@ -1045,12 +1054,12 @@ async function loadUserProgress() {
   try {
     const { data } = await supabase
       .from('user_progress')
-      .select('completed_lessons')
+      .select('lesson_num')
       .eq('user_id', currentUser.id)
-      .single();
-    if (data?.completed_lessons) {
-      completedLessons = new Set(data.completed_lessons);
-      localStorage.setItem('kratos_progress', JSON.stringify(data.completed_lessons));
+      .eq('completed', true);
+    if (data?.length) {
+      completedLessons = new Set(data.map(d => d.lesson_num));
+      localStorage.setItem('kratos_progress', JSON.stringify([...completedLessons]));
     }
   } catch(e) {}
 }
