@@ -30,6 +30,11 @@ app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
+// Lesson viewer route
+app.get('/lesson', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'lesson.html'));
+});
+
 // SPA fallback (only for non-file routes)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

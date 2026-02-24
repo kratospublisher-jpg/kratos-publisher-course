@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson — Kratos Publisher</title>
+<link rel="icon" type="image/jpeg" href="/images/logo.jpg">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--k-orange:#FF8C00;--k-yellow:#FFD700;--k-cyan:#00D4FF;--k-red:#FF1744;--k-blue:#2979FF;--bg:#0A0A0B;--bg2:#111114;--bg-card:#16161A;--bg-el:#1E1E24;--bg-input:#1A1A1F;--text:#F0F0F2;--text2:#9A9AA8;--text3:#6A6A78;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);--green:#4ade80;--green-bg:rgba(74,222,128,0.1)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+a{color:var(--k-cyan);text-decoration:none}
+
+/* Top bar */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 2rem;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.topbar-left{display:flex;align-items:center;gap:1rem}
+.topbar-left img{width:28px;height:28px;border-radius:6px}
+.topbar-left span{font-family:'DM Serif Display',serif;font-size:1rem}
+.back-btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.4rem 0.9rem;background:var(--bg-el);border:1px solid var(--border2);border-radius:8px;color:var(--text2);font-family:'Sora',sans-serif;font-size:0.78rem;cursor:pointer;transition:all 0.2s;text-decoration:none}
+.back-btn:hover{border-color:var(--k-cyan);color:var(--text)}
+
+/* Layout */
+.layout{max-width:1200px;margin:0 auto;padding:2rem}
+
+/* Video */
+.video-wrapper{background:#000;border-radius:16px;overflow:hidden;margin-bottom:2rem;box-shadow:0 8px 40px rgba(0,0,0,0.5)}
+.video-wrapper video{width:100%;display:block;max-height:70vh}
+
+/* Lesson info */
+.lesson-info-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.lesson-title{font-family:'DM Serif Display',serif;font-size:1.6rem}
+.lesson-meta{font-size:0.8rem;color:var(--text3);margin-top:0.25rem}
+.lesson-status{display:flex;align-items:center;gap:0.5rem}
+.status-badge{padding:0.3rem 0.8rem;border-radius:100px;font-size:0.72rem;font-weight:600}
+.status-done{background:var(--green-bg);color:var(--green)}
+.status-pending{background:rgba(255,140,0,0.1);color:var(--k-orange)}
+
+/* Content sections */
+.content-grid{display:grid;grid-template-columns:1fr 380px;gap:2rem}
+@media(max-width:900px){.content-grid{grid-template-columns:1fr}}
+
+/* Notes */
+.notes-section{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.75rem}
+.notes-section h3{font-family:'DM Serif Display',serif;font-size:1.1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem}
+.notes-content{font-size:0.88rem;color:var(--text2);line-height:1.8}
+.notes-content h3{font-size:1rem;margin:1rem 0 0.3rem;color:var(--text);font-family:'Sora',sans-serif;font-weight:600}
+.notes-content h4{font-size:0.9rem;margin:0.75rem 0 0.2rem;color:var(--text)}
+.notes-content p{margin:0.3rem 0}
+.notes-content .bullet{padding-left:1.2rem;position:relative;margin:0.2rem 0}
+.notes-content .bullet::before{content:'•';position:absolute;left:0;color:var(--k-cyan)}
+
+/* Quiz */
+.quiz-section{background:var(--bg-card);border:1px solid rgba(255,140,0,0.2);border-radius:14px;padding:1.75rem;position:sticky;top:80px}
+.quiz-section h3{font-family:'DM Serif Display',serif;font-size:1.1rem;margin-bottom:0.5rem;color:var(--k-orange);display:flex;align-items:center;gap:0.5rem}
+.quiz-subtitle{font-size:0.78rem;color:var(--text3);margin-bottom:1.25rem}
+.quiz-q{margin-bottom:1.25rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+.quiz-q:last-of-type{border-bottom:none}
+.quiz-q-num{font-size:0.7rem;color:var(--k-orange);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;margin-bottom:0.2rem}
+.quiz-q-text{font-size:0.88rem;font-weight:600;margin-bottom:0.6rem}
+.quiz-opt{display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.75rem;margin:0.25rem 0;border-radius:8px;cursor:pointer;font-size:0.82rem;color:var(--text2);transition:all 0.2s;border:1px solid transparent}
+.quiz-opt:hover{background:rgba(255,255,255,0.03)}
+.quiz-opt.selected{background:rgba(0,212,255,0.08);border-color:rgba(0,212,255,0.2);color:var(--text)}
+.quiz-opt.correct{background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:var(--green)}
+.quiz-opt.wrong{background:rgba(255,23,68,0.08);border-color:rgba(255,23,68,0.2);color:var(--k-red)}
+.quiz-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.quiz-opt.selected .quiz-radio{border-color:var(--k-cyan);background:var(--k-cyan)}
+.quiz-opt.selected .quiz-radio::after{content:'';width:6px;height:6px;border-radius:50%;background:white}
+.quiz-opt.correct .quiz-radio{border-color:var(--green);background:var(--green)}
+.quiz-opt.wrong .quiz-radio{border-color:var(--k-red);background:var(--k-red)}
+
+.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.55rem 1.1rem;border-radius:8px;font-family:'Sora',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.3s;border:none}
+.btn-p{background:var(--k-cyan);color:var(--bg);width:100%;justify-content:center;margin-top:0.75rem}
+.btn-p:hover{opacity:0.9}
+.btn-p:disabled{opacity:0.5;cursor:not-allowed}
+.btn-s{background:var(--bg-el);color:var(--text2);border:1px solid var(--border2);width:100%;justify-content:center;margin-top:0.5rem}
+
+.quiz-result{padding:1rem;border-radius:10px;margin-top:0.75rem;font-size:0.85rem;font-weight:600;text-align:center}
+.quiz-result.pass{background:var(--green-bg);color:var(--green);border:1px solid rgba(74,222,128,0.2)}
+.quiz-result.fail{background:rgba(255,23,68,0.08);color:var(--k-red);border:1px solid rgba(255,23,68,0.15)}
+
+.completion-banner{padding:1rem 1.25rem;background:var(--green-bg);border:1px solid rgba(74,222,128,0.2);border-radius:12px;margin-top:1rem;display:flex;align-items:center;justify-content:space-between}
+.completion-banner span{color:var(--green);font-weight:600;font-size:0.88rem}
+.reset-btn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:0.3rem 0.7rem;color:var(--text3);font-size:0.72rem;font-family:'Sora',sans-serif;cursor:pointer;transition:all 0.2s}
+.reset-btn:hover{border-color:var(--k-orange);color:var(--k-orange)}
+
+/* User notes */
+.user-notes{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.75rem;margin-top:2rem}
+.user-notes h3{font-family:'DM Serif Display',serif;font-size:1.1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem}
+.user-notes textarea{width:100%;min-height:150px;padding:1rem;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Sora',sans-serif;font-size:0.85rem;outline:none;resize:vertical}
+.user-notes textarea:focus{border-color:var(--k-cyan)}
+.save-note-btn{margin-top:0.75rem}
+
+/* Loading */
+.loading{text-align:center;padding:4rem 2rem;color:var(--text3)}
+.loading .spin{display:inline-block;width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--k-cyan);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Locked */
+.quiz-locked{text-align:center;padding:2rem;color:var(--k-orange);font-size:0.88rem;background:rgba(255,140,0,0.04);border:1px solid rgba(255,140,0,0.15);border-radius:12px}
+
+/* No video */
+.no-video{display:flex;align-items:center;justify-content:center;min-height:300px;background:var(--bg2);border-radius:16px;margin-bottom:2rem;color:var(--text3);font-size:0.9rem}
+
+/* Toast */
+.toast{position:fixed;bottom:2rem;right:2rem;z-index:9999;padding:0.8rem 1.4rem;border-radius:12px;font-size:0.85rem;font-weight:500;transform:translateY(100px);opacity:0;transition:all 0.4s;box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+.toast.vis{transform:translateY(0);opacity:1}
+.toast-ok{background:var(--green);color:var(--bg)}
+.toast-err{background:var(--k-red);color:white}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <img src="/images/logo.jpg" alt="Kratos">
+    <span>Kratos Publisher</span>
+  </div>
+  <a href="/" class="back-btn" id="backBtn">← Back to Course</a>
+</div>
+
+<div class="layout">
+  <div class="loading" id="loadingState">
+    <div class="spin"></div>
+    <p style="margin-top:1rem">Loading lesson...</p>
+  </div>
+
+  <div id="lessonContent" style="display:none;">
+    <!-- Video -->
+    <div id="videoSection"></div>
+
+    <!-- Info bar -->
+    <div class="lesson-info-bar">
+      <div>
+        <div class="lesson-title" id="lessonTitle"></div>
+        <div class="lesson-meta" id="lessonMeta"></div>
+      </div>
+      <div class="lesson-status" id="lessonStatus"></div>
+    </div>
+
+    <!-- Content grid: notes + quiz -->
+    <div class="content-grid">
+      <div>
+        <!-- Admin notes -->
+        <div class="notes-section" id="notesSection" style="display:none;">
+          <h3>📖 Lesson Notes</h3>
+          <div class="notes-content" id="notesContent"></div>
+        </div>
+
+        <!-- User notes -->
+        <div class="user-notes">
+          <h3>📝 My Notes</h3>
+          <textarea id="userNoteText" placeholder="Write your personal notes for this lesson..."></textarea>
+          <button class="btn btn-s save-note-btn" onclick="saveUserNote()">💾 Save Notes</button>
+        </div>
+      </div>
+
+      <!-- Quiz sidebar -->
+      <div id="quizColumn"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://ywpdiapocrjzabnqixoq.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cGRpYXBvY3JqemFibnFpeG9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MTE1MDAsImV4cCI6MjA4NzQ4NzUwMH0.nlOpULiCGsXPzqcs9phd4MNccpxRCjDoxXoPReeIPNg';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+const LESSONS=[
+  {num:1,mod:1,title:"Is God Calling You to Write This Book?",dur:"25 min",type:"Video + Reflection"},
+  {num:2,mod:1,title:"Defining Your Message & Audience",dur:"20 min",type:"Workshop"},
+  {num:3,mod:1,title:"Choosing the Right Type of Christian Book",dur:"30 min",type:"Teaching"},
+  {num:4,mod:2,title:"Writing with Excellence (Not Perfectionism)",dur:"30 min",type:"Teaching"},
+  {num:5,mod:2,title:"Editing Your Christian Book",dur:"25 min",type:"Workshop"},
+  {num:6,mod:2,title:"Beta Readers, Sensitivity & Theology Checks",dur:"20 min",type:"Teaching"},
+  {num:7,mod:3,title:"Traditional Christian Publishing",dur:"30 min",type:"Teaching"},
+  {num:8,mod:3,title:"Self-Publishing for Christian Authors",dur:"35 min",type:"Workshop"},
+  {num:9,mod:3,title:"Hybrid & Assisted Publishing",dur:"20 min",type:"Teaching"},
+  {num:10,mod:4,title:"ISBNs, Copyright, & Legal Basics",dur:"25 min",type:"Teaching"},
+  {num:11,mod:4,title:"Book Cover & Interior Design",dur:"30 min",type:"Workshop"},
+  {num:12,mod:4,title:"Pricing & Distribution",dur:"20 min",type:"Teaching"},
+  {num:13,mod:5,title:"Preparing for Launch",dur:"25 min",type:"Workshop"},
+  {num:14,mod:5,title:"Marketing Without Compromising Your Faith",dur:"35 min",type:"Teaching"},
+  {num:15,mod:5,title:"Launch Day & Beyond",dur:"20 min",type:"Teaching"},
+  {num:16,mod:6,title:"Using Your Book for Ministry",dur:"25 min",type:"Teaching"},
+  {num:17,mod:6,title:"Building an Author Platform God Can Use",dur:"30 min",type:"Workshop"},
+  {num:18,mod:6,title:"Next Steps After Your First Book",dur:"20 min",type:"Reflection"}
+];
+
+let user=null, lessonNum=null, lessonData=null, content=null;
+let quizAnswers={}, quizPassed=new Set(), completedLessons=new Set();
+
+// Load from localStorage
+try{const s=localStorage.getItem('kratos_quiz_passed');if(s)quizPassed=new Set(JSON.parse(s))}catch(e){}
+try{const s=localStorage.getItem('kratos_progress');if(s)completedLessons=new Set(JSON.parse(s))}catch(e){}
+
+async function init(){
+  // Get lesson number from URL
+  const params=new URLSearchParams(window.location.search);
+  lessonNum=parseInt(params.get('lesson'));
+  if(!lessonNum||lessonNum<1||lessonNum>18){
+    document.getElementById('loadingState').innerHTML='<p>Invalid lesson. <a href="/">Go back</a></p>';
+    return;
+  }
+
+  lessonData=LESSONS.find(l=>l.num===lessonNum);
+  document.title=`Lesson ${lessonNum}: ${lessonData.title} — Kratos Publisher`;
+
+  // Check auth
+  const{data:{session}}=await sb.auth.getSession();
+  if(session)user=session.user;
+
+  // Load progress from Supabase
+  if(user){
+    const{data}=await sb.from('user_progress').select('lesson_num').eq('user_id',user.id).eq('completed',true);
+    if(data?.length)completedLessons=new Set(data.map(d=>d.lesson_num));
+  }
+
+  // Load lesson content
+  try{
+    const{data}=await sb.from('lesson_content').select('*').eq('lesson_num',lessonNum).single();
+    content=data;
+  }catch(e){}
+
+  render();
+}
+
+function render(){
+  document.getElementById('loadingState').style.display='none';
+  document.getElementById('lessonContent').style.display='block';
+
+  // Title
+  document.getElementById('lessonTitle').textContent=`Lesson ${lessonNum}: ${lessonData.title}`;
+  document.getElementById('lessonMeta').textContent=`Module ${lessonData.mod} · ${lessonData.dur} · ${lessonData.type}`;
+
+  // Status
+  const isDone=completedLessons.has(lessonNum);
+  const isPassed=quizPassed.has(lessonNum);
+  document.getElementById('lessonStatus').innerHTML=isDone||isPassed
+    ?`<span class="status-badge status-done">✓ Completed</span>`
+    :`<span class="status-badge status-pending">In Progress</span>`;
+
+  // Video
+  if(content?.video_url){
+    document.getElementById('videoSection').innerHTML=`
+      <div class="video-wrapper">
+        <video controls preload="metadata" autoplay>
+          <source src="${content.video_url}" type="video/mp4">
+        </video>
+      </div>`;
+  }else{
+    document.getElementById('videoSection').innerHTML=`<div class="no-video">📹 Video coming soon for this lesson</div>`;
+  }
+
+  // Notes
+  if(content?.generated_notes){
+    document.getElementById('notesSection').style.display='block';
+    document.getElementById('notesContent').innerHTML=content.generated_notes.split('\n').map(line=>{
+      if(line.startsWith('# '))return `<h3>${line.slice(2)}</h3>`;
+      if(line.startsWith('## '))return `<h4>${line.slice(3)}</h4>`;
+      if(line.startsWith('- '))return `<div class="bullet">${line.slice(2)}</div>`;
+      if(line.trim())return `<p>${line}</p>`;
+      return '';
+    }).join('');
+  }
+
+  // Quiz
+  renderQuiz();
+
+  // Load user notes
+  loadUserNote();
+}
+
+function renderQuiz(){
+  const col=document.getElementById('quizColumn');
+  const isDone=completedLessons.has(lessonNum);
+  const isPassed=quizPassed.has(lessonNum);
+  const hasQuiz=content?.generated_quiz&&Array.isArray(content.generated_quiz)&&content.generated_quiz.length>0;
+
+  if(hasQuiz){
+    if(isPassed){
+      col.innerHTML=`
+        <div class="quiz-section">
+          <h3>📝 Lesson Quiz</h3>
+          <div class="quiz-result pass">✅ Quiz passed! Well done.</div>
+          <div class="completion-banner" style="margin-top:1rem">
+            <span>✓ Lesson Complete!</span>
+            <button class="reset-btn" onclick="resetLesson()">↺ Reset</button>
+          </div>
+        </div>`;
+      return;
+    }
+
+    // If marked done without quiz, reset it
+    if(isDone&&!isPassed){
+      completedLessons.delete(lessonNum);
+      saveProgress();
+    }
+
+    quizAnswers={};
+    let html=`<div class="quiz-section"><h3>📝 Lesson Quiz</h3><p class="quiz-subtitle">Answer all questions correctly to complete this lesson.</p>`;
+
+    content.generated_quiz.forEach((q,qi)=>{
+      html+=`<div class="quiz-q" id="q${qi}"><div class="quiz-q-num">Question ${qi+1} of ${content.generated_quiz.length}</div><div class="quiz-q-text">${q.question}</div>`;
+      q.options.forEach((opt,oi)=>{
+        html+=`<div class="quiz-opt" id="q${qi}-o${oi}" onclick="selectAnswer(${qi},${oi})"><div class="quiz-radio"></div><span>${opt}</span></div>`;
+      });
+      html+=`</div>`;
+    });
+
+    html+=`<button class="btn btn-p" id="submitBtn" onclick="submitQuiz()">Submit Answers</button>`;
+    html+=`<div id="quizResult"></div></div>`;
+    col.innerHTML=html;
+  }else if(content?.video_url){
+    col.innerHTML=`<div class="quiz-section"><h3>📝 Lesson Quiz</h3><div class="quiz-locked">🔒 Quiz coming soon.<br>You'll need to pass the quiz to complete this lesson.</div></div>`;
+  }else{
+    // No video, no quiz — manual completion
+    if(isDone){
+      col.innerHTML=`
+        <div class="quiz-section">
+          <div class="completion-banner">
+            <span>✓ Lesson Complete!</span>
+            <button class="reset-btn" onclick="resetLesson()">↺ Reset</button>
+          </div>
+        </div>`;
+    }else{
+      col.innerHTML=`
+        <div class="quiz-section">
+          <h3>✅ Ready to complete?</h3>
+          <p style="font-size:0.82rem;color:var(--text3);margin-bottom:1rem">Review the lesson topics and mark complete when ready.</p>
+          <button class="btn btn-p" onclick="manualComplete()">Mark as Completed</button>
+        </div>`;
+    }
+  }
+}
+
+function selectAnswer(qi,oi){
+  const quiz=content.generated_quiz;
+  quiz[qi].options.forEach((_,o)=>{
+    const el=document.getElementById(`q${qi}-o${o}`);
+    if(el)el.classList.remove('selected','correct','wrong');
+  });
+  document.getElementById(`q${qi}-o${oi}`).classList.add('selected');
+  quizAnswers[qi]=oi;
+}
+
+function submitQuiz(){
+  const quiz=content.generated_quiz;
+  const total=quiz.length;
+
+  if(Object.keys(quizAnswers).length<total){
+    document.getElementById('quizResult').innerHTML=`<div class="quiz-result fail">Please answer all questions.</div>`;
+    return;
+  }
+
+  let correct=0;
+  quiz.forEach((q,qi)=>{
+    const userAns=quizAnswers[qi];
+    const correctAns=q.answer;
+    const isCorrect=userAns===correctAns;
+    if(isCorrect)correct++;
+
+    q.options.forEach((_,oi)=>{
+      const el=document.getElementById(`q${qi}-o${oi}`);
+      if(!el)return;
+      el.classList.remove('selected');
+      el.style.pointerEvents='none';
+      if(oi===correctAns)el.classList.add('correct');
+      else if(oi===userAns&&!isCorrect)el.classList.add('wrong');
+    });
+  });
+
+  document.getElementById('submitBtn').disabled=true;
+
+  if(correct===total){
+    quizPassed.add(lessonNum);
+    try{localStorage.setItem('kratos_quiz_passed',JSON.stringify([...quizPassed]))}catch(e){}
+    completedLessons.add(lessonNum);
+    saveProgress();
+
+    document.getElementById('quizResult').innerHTML=`
+      <div class="quiz-result pass">🎉 ${correct}/${total} — Quiz Passed!</div>
+      <div class="completion-banner" style="margin-top:1rem"><span>✓ Lesson Complete!</span><button class="reset-btn" onclick="resetLesson()">↺ Reset</button></div>`;
+
+    // Update status
+    document.getElementById('lessonStatus').innerHTML=`<span class="status-badge status-done">✓ Completed</span>`;
+  }else{
+    document.getElementById('quizResult').innerHTML=`
+      <div class="quiz-result fail">${correct}/${total} — You need a perfect score.<br><button class="btn btn-s" style="margin-top:0.5rem" onclick="retryQuiz()">Try Again</button></div>`;
+  }
+}
+
+function retryQuiz(){
+  quizAnswers={};
+  renderQuiz();
+}
+
+function manualComplete(){
+  completedLessons.add(lessonNum);
+  saveProgress();
+  renderQuiz();
+  document.getElementById('lessonStatus').innerHTML=`<span class="status-badge status-done">✓ Completed</span>`;
+  toast('Lesson completed!','ok');
+}
+
+function resetLesson(){
+  if(!confirm('Reset this lesson? Quiz progress will be cleared.'))return;
+  completedLessons.delete(lessonNum);
+  quizPassed.delete(lessonNum);
+  try{localStorage.setItem('kratos_quiz_passed',JSON.stringify([...quizPassed]))}catch(e){}
+  if(user)sb.from('user_progress').delete().eq('user_id',user.id).eq('lesson_num',lessonNum);
+  saveProgress();
+  renderQuiz();
+  document.getElementById('lessonStatus').innerHTML=`<span class="status-badge status-pending">In Progress</span>`;
+  toast('Lesson reset','ok');
+}
+
+function saveProgress(){
+  try{localStorage.setItem('kratos_progress',JSON.stringify([...completedLessons]))}catch(e){}
+  if(user){
+    completedLessons.forEach(num=>{
+      sb.from('user_progress').upsert({user_id:user.id,lesson_num:num,completed:true,completed_at:new Date().toISOString()},{onConflict:'user_id,lesson_num'});
+    });
+  }
+}
+
+// User notes
+async function loadUserNote(){
+  if(!user)return;
+  try{
+    const{data}=await sb.from('user_notes').select('content').eq('user_id',user.id).eq('lesson_num',lessonNum).single();
+    if(data?.content)document.getElementById('userNoteText').value=data.content;
+  }catch(e){}
+}
+
+async function saveUserNote(){
+  if(!user){toast('Sign in to save notes','err');return}
+  const content=document.getElementById('userNoteText').value;
+  await sb.from('user_notes').upsert({user_id:user.id,lesson_num:lessonNum,content,updated_at:new Date().toISOString()},{onConflict:'user_id,lesson_num'});
+  toast('Notes saved!','ok');
+}
+
+function toast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast toast-'+type+' vis';
+  setTimeout(()=>t.classList.remove('vis'),3000);
+}
+
+init();
+</script>
+</body>
+</html>

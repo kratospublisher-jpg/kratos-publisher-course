@@ -1480,7 +1480,7 @@ function renderMainContent() {
             </div>
 
             <div class="lesson-actions" style="margin-top:1rem;">
-              <button class="btn-lesson btn-primary" onclick="loadLessonContent(${lesson.num})">Start Lesson</button>
+              <button class="btn-lesson btn-primary" onclick="window.open('/lesson?lesson=${lesson.num}', '_blank')">▶ Start Lesson</button>
               <button class="btn-lesson btn-secondary" onclick="openNoteEditor(${lesson.num})">📝 Take Notes</button>
             </div>
           </div>
@@ -1909,6 +1909,19 @@ function closeNoteModal() {
 // ========== INIT ==========
 renderModulePreviews();
 checkSession();
+
+// Refresh progress when returning from lesson tab
+window.addEventListener('focus', async () => {
+  // Reload from localStorage in case lesson page updated it
+  try {
+    const s = localStorage.getItem('kratos_progress');
+    if (s) completedLessons = new Set(JSON.parse(s));
+  } catch(e) {}
+  renderSidebar();
+  if (document.getElementById('courseView').classList.contains('visible')) {
+    renderMainContent();
+  }
+});
 </script>
 </body>
 </html>
