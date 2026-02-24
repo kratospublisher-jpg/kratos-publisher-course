@@ -753,6 +753,7 @@ async function loadLessonEditor() {
           <span style="background:var(--bg-elevated); width:30px; height:30px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:0.8rem; color:var(--text3);">${l.lesson_num}</span>
           ${l.title}
           <span class="badge ${l.is_published ? 'badge-published' : 'badge-draft'}" style="margin-left:auto;">${l.is_published ? 'Published' : 'Draft'}</span>
+          ${l.generated_quiz && l.generated_quiz.length ? '<span class="badge badge-published" style="margin-left:0.5rem;">Quiz ✓</span>' : '<span class="badge badge-draft" style="margin-left:0.5rem;">No Quiz</span>'}
         </h3>
         <div class="form-grid">
           <div class="form-group full">
@@ -772,15 +773,20 @@ async function loadLessonEditor() {
           </div>
           <div class="form-group full">
             <label class="form-label">Video URL</label>
-            <input class="form-input" type="text" id="video-${l.lesson_num}" value="${l.video_url || ''}" placeholder="Upload via Video Upload page">
+            <input class="form-input" type="text" id="video-${l.lesson_num}" value="${l.video_url || ''}" placeholder="Paste video URL here">
           </div>
           <div class="form-group full">
             <label class="form-label">Lesson Notes</label>
             <textarea class="form-textarea" id="notes-${l.lesson_num}" rows="4">${l.generated_notes || ''}</textarea>
           </div>
+          <div class="form-group full">
+            <label class="form-label">Quiz (JSON) — <span style="color:${l.generated_quiz && l.generated_quiz.length ? 'var(--success)' : 'var(--warning)'}">${l.generated_quiz && l.generated_quiz.length ? l.generated_quiz.length + ' questions' : 'No quiz set'}</span></label>
+            <textarea class="form-textarea" id="quiz-${l.lesson_num}" rows="4" placeholder='[{"question":"...","options":["A)...","B)...","C)...","D)..."],"answer":0}]'>${l.generated_quiz ? JSON.stringify(l.generated_quiz, null, 2) : ''}</textarea>
+          </div>
         </div>
-        <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
-          <button class="btn btn-primary btn-sm" onclick="saveLesson(${l.lesson_num})">Save Lesson</button>
+        <div style="display:flex; gap:0.5rem; margin-top:0.5rem; flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="saveLesson(${l.lesson_num})">💾 Save Lesson</button>
+          <button class="btn btn-secondary btn-sm" onclick="generateQuizForLesson(${l.lesson_num})" id="gen-btn-${l.lesson_num}">🤖 Auto-Generate Quiz & Notes</button>
           <button class="btn btn-secondary btn-sm" onclick="togglePublish(${l.lesson_num}, ${!l.is_published})">
             ${l.is_published ? '⏸ Unpublish' : '▶ Publish'}
           </button>
@@ -792,18 +798,119 @@ async function loadLessonEditor() {
 
 async function saveLesson(num) {
   try {
+    const quizText = document.getElementById('quiz-' + num).value.trim();
+    let quizData = null;
+    if (quizText) {
+      try { quizData = JSON.parse(quizText); } catch(e) { toast('Invalid quiz JSON for lesson ' + num, 'error'); return; }
+    }
+
     const updates = {
       description: document.getElementById('desc-' + num).value,
       duration_minutes: parseInt(document.getElementById('duration-' + num).value) || null,
       is_published: document.getElementById('published-' + num).value === 'true',
       video_url: document.getElementById('video-' + num).value || null,
       generated_notes: document.getElementById('notes-' + num).value || null,
+      generated_quiz: quizData,
     };
 
     const { error } = await sb.from('lesson_content').update(updates).eq('lesson_num', num);
     if (error) throw error;
     toast('Lesson ' + num + ' saved!', 'success');
   } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function generateQuizForLesson(num) {
+  const btn = document.getElementById('gen-btn-' + num);
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating...';
+
+  try {
+    const lesson = allLessons.find(l => l.lesson_num === num);
+    const title = lesson?.title || 'Lesson ' + num;
+    const desc = document.getElementById('desc-' + num).value || lesson?.description || '';
+
+    // Lesson-specific quiz bank
+    const quizBank = {
+      1: [
+        { question: "What is the primary foundation for writing a Christian book?", options: ["A) A strong marketing plan", "B) A sense of God's calling and stewardship", "C) Having a large social media following", "D) A publishing contract"], answer: 1 },
+        { question: "How should a Christian author distinguish between God's timing and personal ambition?", options: ["A) By checking book sales trends", "B) Through prayer, discernment, and seeking confirmation", "C) By comparing themselves to other authors", "D) By rushing to publish as fast as possible"], answer: 1 },
+        { question: "Writing a Christian book should be viewed as:", options: ["A) Primarily a business opportunity", "B) A way to become famous", "C) An act of stewardship and obedience", "D) Something only pastors should do"], answer: 2 },
+        { question: "What role does prayer play in the decision to write?", options: ["A) It's optional", "B) It's central to discerning God's will for your book", "C) It should only happen after you finish writing", "D) It's only for the launch phase"], answer: 1 },
+        { question: "Which best describes 'confirmation' in the context of writing?", options: ["A) Getting a book deal", "B) Receiving alignment from trusted advisors, Scripture, and the Holy Spirit", "C) Having thousands of followers", "D) Feeling excited about your idea"], answer: 1 }
+      ],
+      2: [
+        { question: "Why is it important to define your target audience?", options: ["A) To write a book that speaks to everyone", "B) To ensure your message reaches and impacts the right readers", "C) To make the book more expensive", "D) It's not important"], answer: 1 },
+        { question: "What should a Christian author consider when defining their message?", options: ["A) What's trending on social media", "B) What spiritual problem the book solves for readers", "C) How to make the most money", "D) What other authors are writing about"], answer: 1 },
+        { question: "Narrowing your Christian niche means:", options: ["A) Writing about everything possible", "B) Focusing on a specific area like devotional, memoir, or theology", "C) Limiting your potential readers", "D) Copying another author's style"], answer: 1 },
+        { question: "Who should your Christian book primarily serve?", options: ["A) Publishers and agents", "B) The specific reader God has placed on your heart", "C) Only your church members", "D) Book reviewers"], answer: 1 },
+        { question: "A well-defined message should:", options: ["A) Be vague to appeal to everyone", "B) Clearly articulate the transformation the reader will experience", "C) Focus only on doctrine", "D) Avoid personal stories"], answer: 1 }
+      ],
+      3: [
+        { question: "Which of these is NOT a common type of Christian book?", options: ["A) Devotional", "B) Bible study", "C) Algorithm guide", "D) Christian fiction"], answer: 2 },
+        { question: "How does the format of your book affect publishing?", options: ["A) It doesn't matter", "B) Different formats have different requirements and audiences", "C) All formats are published the same way", "D) Only fiction gets published"], answer: 1 },
+        { question: "A Christian living book typically focuses on:", options: ["A) Fictional stories", "B) Practical faith application for everyday life", "C) Academic theology only", "D) Children's stories"], answer: 1 },
+        { question: "When choosing your book type, you should consider:", options: ["A) Only what sells best", "B) Your message, audience, and how God is leading you", "C) What's easiest to write", "D) What requires the fewest pages"], answer: 1 },
+        { question: "A memoir or testimony book is best for authors who:", options: ["A) Want to write fiction", "B) Have a personal story of God's work that can encourage others", "C) Only want to teach doctrine", "D) Don't have writing experience"], answer: 1 }
+      ],
+      4: [
+        { question: "What does 'writing with excellence' mean for a Christian author?", options: ["A) Being perfect in every sentence", "B) Giving your best effort while trusting God with the results", "C) Never making revisions", "D) Writing as fast as possible"], answer: 1 },
+        { question: "How should a Christian author deal with perfectionism?", options: ["A) Never publish until it's flawless", "B) Recognize it as a form of fear and trust God's timing", "C) Ignore all feedback", "D) Compare your work to bestsellers only"], answer: 1 },
+        { question: "What is the danger of perfectionism in writing?", options: ["A) Your book becomes too good", "B) It can paralyze you and prevent you from finishing", "C) It makes editing unnecessary", "D) It guarantees success"], answer: 1 },
+        { question: "Excellence in Christian writing includes:", options: ["A) Only using King James English", "B) Strong craft, clear message, and authentic voice", "C) Writing exactly like your favourite author", "D) Avoiding all personal stories"], answer: 1 },
+        { question: "When should you stop revising and trust your manuscript is ready?", options: ["A) After the first draft", "B) When professional feedback confirms it communicates your message clearly", "C) Never — keep revising forever", "D) When you feel like it"], answer: 1 }
+      ],
+      5: [
+        { question: "What is the primary purpose of editing a Christian book?", options: ["A) To make it longer", "B) To refine your message and ensure clarity and quality", "C) To remove all personal opinions", "D) To make it sound academic"], answer: 1 },
+        { question: "Which type of editing focuses on overall structure and flow?", options: ["A) Proofreading", "B) Developmental editing", "C) Line editing", "D) Formatting"], answer: 1 },
+        { question: "Why is professional editing important for Christian authors?", options: ["A) It's not important", "B) It honours God by presenting your message with excellence", "C) It changes your message entirely", "D) It's only for traditional publishing"], answer: 1 },
+        { question: "Self-editing should happen:", options: ["A) Never", "B) Before sending to a professional editor", "C) Only after publishing", "D) Instead of professional editing"], answer: 1 },
+        { question: "How many rounds of editing should a typical book go through?", options: ["A) Zero", "B) At least 2-3 rounds of different types", "C) Exactly one", "D) As many as you can afford"], answer: 1 }
+      ],
+      6: [
+        { question: "What is the role of beta readers?", options: ["A) To proofread for typos only", "B) To provide honest feedback on how your book reads from a reader's perspective", "C) To write your book for you", "D) To market your book"], answer: 1 },
+        { question: "Why are sensitivity readers important for Christian books?", options: ["A) They're not important", "B) They help ensure your book doesn't unintentionally harm or exclude readers", "C) They rewrite your theology", "D) They're only for fiction"], answer: 1 },
+        { question: "A theology check ensures:", options: ["A) Your book is long enough", "B) Your biblical references and doctrinal claims are accurate", "C) Your book will sell well", "D) You've quoted enough Scripture"], answer: 1 },
+        { question: "How many beta readers should you typically use?", options: ["A) 1", "B) 3-8 from your target audience", "C) 50+", "D) None — trust your own judgment"], answer: 1 },
+        { question: "When should you engage beta readers?", options: ["A) Before writing", "B) After your manuscript is self-edited but before professional editing", "C) After the book is published", "D) Only if a publisher requires it"], answer: 1 }
+      ]
+    };
+
+    // Generate generic quiz for lessons without specific banks
+    const defaultQuiz = [
+      { question: "What is the main focus of this lesson on '" + title + "'?", options: ["A) " + (desc.split('.')[0] || title), "B) Social media marketing", "C) Website development", "D) Financial planning"], answer: 0 },
+      { question: "Why is this topic important for Christian authors?", options: ["A) It's not important", "B) It helps steward the calling God has placed on their hearts", "C) It's only about making money", "D) It's a legal requirement"], answer: 1 },
+      { question: "How should a believer approach this aspect of publishing?", options: ["A) By rushing through it", "B) By ignoring it completely", "C) With prayer, wisdom, and excellence", "D) By copying secular approaches exactly"], answer: 2 },
+      { question: "What is the role of faith in this process?", options: ["A) Faith has no role", "B) Faith provides the foundation for decisions and perseverance", "C) Faith should be kept separate from business", "D) Faith only matters at the end"], answer: 1 },
+      { question: "After completing this lesson, what should you do?", options: ["A) Move on without reflection", "B) Apply what you've learned and pray for guidance", "C) Forget everything", "D) Skip to the last module"], answer: 1 }
+    ];
+
+    const quiz = quizBank[num] || defaultQuiz;
+
+    // Generate notes
+    const notes = `# ${title}\n\n## Overview\n${desc}\n\n## Key Takeaways\n${desc.split('.').filter(s=>s.trim()).map(s=>'- '+s.trim()).join('\n')}\n\n## Action Steps\n- Review the video content and take personal notes\n- Reflect on how this applies to your specific book project\n- Complete the quiz to test your understanding\n- Pray and ask God for wisdom in applying these principles\n\n## Reflection Questions\n- How does this lesson speak to where you are in your journey?\n- What is one thing you can implement this week?\n- Who can you share this knowledge with?\n\n## Prayer\nLord, thank You for this knowledge. Help me apply it faithfully to the work You've called me to do. Give me courage where I feel uncertain and wisdom where I need direction. In Jesus' name, Amen.`;
+
+    // Update the textareas
+    document.getElementById('quiz-' + num).value = JSON.stringify(quiz, null, 2);
+    if (!document.getElementById('notes-' + num).value.trim()) {
+      document.getElementById('notes-' + num).value = notes;
+    }
+
+    // Auto-save
+    const quizText = document.getElementById('quiz-' + num).value.trim();
+    const notesText = document.getElementById('notes-' + num).value;
+    await sb.from('lesson_content').update({
+      generated_quiz: quiz,
+      generated_notes: notesText,
+      generated_summary: `This lesson explores: ${desc}`
+    }).eq('lesson_num', num);
+
+    toast('Quiz & notes generated and saved for Lesson ' + num + '!', 'success');
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🤖 Auto-Generate Quiz & Notes';
 }
 
 async function saveAllLessons() {
