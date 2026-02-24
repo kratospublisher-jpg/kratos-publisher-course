@@ -1430,6 +1430,9 @@ function renderMainContent() {
       <div class="module-badge">✦ MODULE ${mod.id} OF 6</div>
       <h2>${mod.title}</h2>
       <div class="module-theme">"${mod.theme}"</div>
+      <div style="margin-top:0.75rem;">
+        <button onclick="resetModule(${mod.id})" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:0.4rem 0.9rem;color:var(--text-muted);font-size:0.75rem;font-family:'Sora',sans-serif;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--k-orange)';this.style.color='var(--k-orange)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='var(--text-muted)'">↺ Reset Module</button>
+      </div>
     </div>
   `;
 
@@ -1467,9 +1470,12 @@ function renderMainContent() {
 
             <!-- Completion (hidden until quiz passed or no quiz) -->
             <div class="lesson-completion" id="completion-${lesson.num}" style="${isDone ? '' : 'display:none;'}">
-              <div style="display:flex;align-items:center;gap:0.5rem;padding:0.75rem 1rem;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:10px;margin-top:1rem;">
-                <span style="color:#4ade80;font-size:1.1rem;">✓</span>
-                <span style="color:#4ade80;font-size:0.85rem;font-weight:600;">Lesson Complete!</span>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:10px;margin-top:1rem;">
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                  <span style="color:#4ade80;font-size:1.1rem;">✓</span>
+                  <span style="color:#4ade80;font-size:0.85rem;font-weight:600;">Lesson Complete!</span>
+                </div>
+                <button onclick="resetLesson(${lesson.num})" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:0.3rem 0.7rem;color:var(--text-muted);font-size:0.72rem;font-family:'Sora',sans-serif;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--k-orange)';this.style.color='var(--k-orange)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='var(--text-muted)'">↺ Reset Lesson</button>
               </div>
             </div>
 
@@ -1526,6 +1532,53 @@ function toggleComplete(num, checked) {
     const n = card.querySelector('.lesson-num');
     if (n) n.textContent = checked ? '✓' : num;
   }
+}
+
+function resetLesson(num) {
+  if (!confirm('Reset this lesson? Your quiz progress will be cleared and you can retake it.')) return;
+  completedLessons.delete(num);
+  quizPassed.delete(num);
+  try { localStorage.setItem('kratos_quiz_passed', JSON.stringify([...quizPassed])); } catch(e) {}
+
+  // Remove from Supabase
+  if (sb && currentUser) {
+    sb.from('user_progress').delete().eq('user_id', currentUser.id).eq('lesson_num', num).then(() => {});
+  }
+
+  saveProgress();
+  renderSidebar();
+  renderMainContent();
+}
+
+function resetModule(moduleId) {
+  const mod = courseData.find(m => m.id === moduleId);
+  if (!mod) return;
+  const lessonNums = mod.lessons.map(l => l.num);
+  const completedInModule = lessonNums.filter(n => completedLessons.has(n));
+
+  if (completedInModule.length === 0) {
+    alert('No completed lessons in this module to reset.');
+    return;
+  }
+
+  if (!confirm(`Reset all ${completedInModule.length} completed lesson(s) in Module ${moduleId}: ${mod.title}?\n\nQuiz progress will also be cleared.`)) return;
+
+  lessonNums.forEach(num => {
+    completedLessons.delete(num);
+    quizPassed.delete(num);
+  });
+  try { localStorage.setItem('kratos_quiz_passed', JSON.stringify([...quizPassed])); } catch(e) {}
+
+  // Remove from Supabase
+  if (sb && currentUser) {
+    lessonNums.forEach(num => {
+      sb.from('user_progress').delete().eq('user_id', currentUser.id).eq('lesson_num', num).then(() => {});
+    });
+  }
+
+  saveProgress();
+  renderSidebar();
+  renderMainContent();
 }
 
 function switchModule(i) {
