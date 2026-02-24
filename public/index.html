@@ -754,8 +754,8 @@ body {
 @media (max-width: 1024px) {
   .course-layout { grid-template-columns: 260px 1fr; gap: 1.5rem; }
 /* ===== LESSON VIDEO ===== */
-.lesson-video { width:100%; border-radius:12px; margin-bottom:1rem; background:var(--bg-primary); }
-.lesson-video video { width:100%; border-radius:12px; display:block; }
+.lesson-video { width:100%; border-radius:12px; margin-bottom:1rem; background:#000; max-height:400px; overflow:hidden; }
+.lesson-video video { width:100%; max-height:400px; border-radius:12px; display:block; object-fit:contain; background:#000; }
 
 /* ===== LESSON NOTES FROM ADMIN ===== */
 .admin-notes { background:rgba(0,212,255,0.04); border:1px solid rgba(0,212,255,0.1); border-radius:10px; padding:1.25rem; margin:1rem 0; font-size:0.88rem; color:var(--text-secondary); line-height:1.7; }
@@ -1468,8 +1468,8 @@ function renderMainContent() {
             <!-- Quiz area (must pass to complete) -->
             <div class="lesson-quiz-area" id="quiz-area-${lesson.num}"></div>
 
-            <!-- Completion (hidden until quiz passed or no quiz) -->
-            <div class="lesson-completion" id="completion-${lesson.num}" style="${isDone ? '' : 'display:none;'}">
+            <!-- Completion (only shown after quiz passed or manual complete) -->
+            <div class="lesson-completion" id="completion-${lesson.num}" style="display:none;">
               <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:10px;margin-top:1rem;">
                 <div style="display:flex;align-items:center;gap:0.5rem;">
                   <span style="color:#4ade80;font-size:1.1rem;">✓</span>
@@ -1532,6 +1532,9 @@ function toggleComplete(num, checked) {
     const n = card.querySelector('.lesson-num');
     if (n) n.textContent = checked ? '✓' : num;
   }
+  // Show/hide completion banner
+  const comp = document.getElementById('completion-' + num);
+  if (comp) comp.style.display = checked ? 'block' : 'none';
 }
 
 function resetLesson(num) {
@@ -1626,6 +1629,21 @@ try {
 } catch(e) {}
 
 async function loadLessonContent(lessonNum) {
+  // Auto-expand the lesson card
+  const cid = 'lesson-' + lessonNum;
+  const card = document.getElementById(cid);
+  if (card && !card.classList.contains('active')) {
+    toggleLesson(cid);
+  }
+
+  const videoArea = document.getElementById('video-area-' + lessonNum);
+  const notesArea = document.getElementById('notes-area-' + lessonNum);
+  const quizArea = document.getElementById('quiz-area-' + lessonNum);
+  const completionArea = document.getElementById('completion-' + lessonNum);
+
+  // Show loading
+  videoArea.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);font-size:0.85rem;">Loading lesson content...</div>';
+
   // Fetch from Supabase if not cached
   if (!lessonContentCache[lessonNum] && sb) {
     try {
@@ -1638,10 +1656,26 @@ async function loadLessonContent(lessonNum) {
   }
 
   const content = lessonContentCache[lessonNum];
-  const videoArea = document.getElementById('video-area-' + lessonNum);
-  const notesArea = document.getElementById('notes-area-' + lessonNum);
-  const quizArea = document.getElementById('quiz-area-' + lessonNum);
-  const completionArea = document.getElementById('completion-' + lessonNum);
+  videoArea.innerHTML = '';
+  notesArea.innerHTML = '';
+  quizArea.innerHTML = '';
+
+  const hasRealContent = content && (content.video_url || content.generated_notes || (content.generated_quiz && Array.isArray(content.generated_quiz) && content.generated_quiz.length > 0));
+
+  if (!hasRealContent) {
+    videoArea.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text-muted);font-size:0.85rem;background:rgba(255,255,255,0.02);border:1px solid var(--border-subtle);border-radius:10px;">📚 Lesson content coming soon. Check back later!</div>';
+    // Still allow manual completion if no quiz
+    if (!completedLessons.has(lessonNum)) {
+      quizArea.innerHTML = `
+        <label class="completion-check" onclick="event.stopPropagation()" style="margin-top:1rem;">
+          <input type="checkbox" onchange="toggleComplete(${lessonNum}, this.checked)">
+          <span class="check-box"></span>
+          <span>Mark as completed</span>
+        </label>`;
+    }
+    setTimeout(() => { card?.scrollIntoView({ behavior:'smooth', block:'center' }); }, 200);
+    return;
+  }
 
   // Render video
   if (content?.video_url) {
@@ -1714,6 +1748,9 @@ async function loadLessonContent(lessonNum) {
     }
     if (isDone) completionArea.style.display = 'block';
   }
+
+  // Scroll to video area
+  setTimeout(() => { videoArea?.scrollIntoView({ behavior:'smooth', block:'start' }); }, 200);
 }
 
 function selectQuizAnswer(lessonNum, qIdx, optIdx) {
